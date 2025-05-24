@@ -1,0 +1,7 @@
+title: Boson Research
+description: Data. Analytics. Investment. Science.
+baseurl: ""
+url: "https://dbose.github.io"
+markdown: kramdown
+theme: minima
+permalink: /:categories/:title/

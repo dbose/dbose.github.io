@@ -1,27 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ page.title }} | Boson Research</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
   <header>
-    <h1>Boson Research</h1>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/projects/">Projects</a>
-      <a href="/articles/">Articles</a>
-      <a href="/research/">Research</a>
-      <a href="/about/">About</a>
-    </nav>
+    <h1><a href="/" style="color: white; text-decoration: none;">Boson Research</a></h1>
   </header>
-  <main>
-    <article>
-      <h2>{{ page.title }}</h2>
-      <p><em>{{ page.date | date: "%B %d, %Y" }}</em></p>
-      {{ content }}
-    </article>
+  <main class="container">
+    <h2>{{ page.title }}</h2>
+    <p><em>{{ page.date | date: "%B %d, %Y" }}</em></p>
+    {{ content }}
   </main>
   <footer>
     <p>&copy; 2025 Boson Research. All rights reserved.</p>
