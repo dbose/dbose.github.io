@@ -1,5 +1,4 @@
-/* assets/css/style.css */
-
+/* Base Reset */
 * {
   margin: 0;
   padding: 0;
@@ -15,10 +14,27 @@ body {
   padding: 2rem;
 }
 
+/* Typography */
 h1, h2, h3, h4, h5, h6 {
   color: #003366;
   margin-bottom: 1rem;
   font-weight: 700;
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.75rem;
+}
+
+p {
+  margin-bottom: 1rem;
 }
 
 a {
@@ -30,28 +46,35 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Layout */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
 header {
   background-color: #003366;
-  color: white;
+  color: #ffffff;
   padding: 1.5rem 2rem;
 }
 
 nav a {
-  color: white;
+  color: #ffffff;
   margin-right: 1.5rem;
+  text-decoration: none;
+  font-weight: 400;
+}
+
+nav a:hover {
+  text-decoration: underline;
 }
 
 .hero {
   background-color: #00509e;
   color: white;
-  padding: 2rem;
+  padding: 3rem 2rem;
   text-align: center;
-}
-
-.container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 2rem;
 }
 
 footer {
@@ -59,4 +82,35 @@ footer {
   color: white;
   text-align: center;
   padding: 2rem;
+  margin-top: 3rem;
+  font-size: 0.9rem;
+}
+
+/* Articles */
+article {
+  margin-bottom: 2rem;
+}
+
+article h2 {
+  margin-bottom: 0.5rem;
+}
+
+article p {
+  margin-bottom: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  body {
+    padding: 1rem;
+  }
+
+  .container {
+    padding: 1rem;
+  }
+
+  nav a {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
 }
