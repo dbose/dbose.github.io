@@ -23,7 +23,7 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="../site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="../site_libs/quarto-nav/headroom.min.js"></script>
 <script src="../site_libs/clipboard/clipboard.min.js"></script>
 <script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -40,7 +40,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-b3b235ae6ba71d6e5c2a90c00144237d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-635a35c16803d16fd9db22f392043487.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -68,8 +68,12 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
+<link rel="stylesheet" href="../styles.css">
 </head>
 
 <body class="nav-fixed quarto-light">
@@ -124,12 +128,21 @@ ul.task-list li input[type="checkbox"] {
     </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#whats-here" id="toc-whats-here" class="nav-link active" data-scroll-target="#whats-here">What’s here</a></li>
+  <li><a href="#file-index" id="toc-file-index" class="nav-link" data-scroll-target="#file-index">File Index</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
+<main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -139,7 +152,7 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<div class="quarto-title-meta column-page">
+<div class="quarto-title-meta">
 
     
   
@@ -159,17 +172,34 @@ ul.task-list li input[type="checkbox"] {
 </ul>
 <hr>
 </section>
-<section id="paper-notes-qmdmd" class="level2">
-<h2 class="anchored" data-anchor-id="paper-notes-qmdmd">Paper notes (QMD/MD)</h2>
-<p>listing: contents: - . type: grid sort: “date desc” fields: [title, date, description, categories] filter-ui: true categories: true include-ext: [qmd, md]</p>
-</section>
-<section id="pdf-library" class="level2">
-<h2 class="anchored" data-anchor-id="pdf-library">PDF library</h2>
-<p>import re from pathlib import Path</p>
-<p>root = Path(“papers”) pdfs = sorted( p for p in root.glob(“*.pdf”) if p.name.lower() != “index.pdf” )</p>
-<p>def nice_title(name): name = re.sub(r”[_-]+“,” “, name) name = re.sub(r”+“,” “, name).strip() return name[:-4] if name.lower().endswith(”.pdf”) else name</p>
-<p>lines = [f”- <a href="{p.name}">{nice_title(p.name)}</a>” for p in pdfs]</p>
-<p>print(“”.join(lines) if lines else “<em>No PDFs yet.</em>”)</p>
+<section id="file-index" class="level2">
+<h2 class="anchored" data-anchor-id="file-index">File Index</h2>
+<div id="338def48" class="cell" data-execution_count="1">
+<div class="cell-output cell-output-display">
+
+<div class="file-grid">
+  
+<div class="file-card">
+  <a href="Existential_Risk_and_Growth.pdf" target="_blank" class="file-link">
+    <div class="file-top">
+      <span class="file-pill pdf">pdf</span>
+    </div>
+    <div class="file-title"><strong>Existential Risk and Growth</strong></div>
+  </a>
+</div>
+
+<div class="file-card">
+  <a href="Paper_A_Revised_1971_Shock.html" target="_self" class="file-link">
+    <div class="file-top">
+      <span class="file-pill qmd">qmd</span>
+    </div>
+    <div class="file-title"><strong>Paper A Revised 1971 Shock</strong></div>
+  </a>
+</div>
+
+</div>
+</div>
+</div>
 
 
 </section>
