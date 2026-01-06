@@ -12,3 +12,4 @@ Inline math: $I_t = f(1/C_t)$
 ```{python}
 import math
 math.sqrt(2)
+```
