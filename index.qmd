@@ -1,14 +1,31 @@
 ---
 title: "Deb Bose"
 subtitle: "Research • Notebooks • Papers • Projects"
+categories: [ai, quant, macro, economics, investment, political-economy, evolution, civilisation]
 ---
 
-## What you'll find here
+This site is a working archive — not a feed.
 
-- **Articles**: essays, market notes, technical deep dives  
-- **Notebooks**: runnable research with code + charts  
-- **Papers**: PDFs + references  
-- **Projects**: links to my GitHub work
+Everything here is oriented toward **truth-seeking through analysis**:  
+quantitative reasoning where possible, first-principles thinking where necessary, and skepticism toward narratives that don’t survive contact with data.
 
-### Latest articles
-- Go to [Articles](/posts/)
+## What you’ll find here
+
+### Articles
+Essays, market notes, and technical deep dives — written to clarify, not to perform.
+
+### Notebooks
+Runnable research with code, charts, and assumptions made explicit.  
+Exploratory by design, not polished marketing artefacts.
+
+### Papers
+Drafts, PDFs, and reference material — including work that is incomplete, evolving, or deliberately unresolved.
+
+### Projects
+Pointers to my GitHub work: tools, models, and systems built to answer specific questions.
+
+---
+
+## Latest writing
+- → **[Go to Papers](./papers/)**
+- → **[Go to Notebooks](./notebooks/)**
