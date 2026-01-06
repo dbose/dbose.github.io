@@ -1,8 +1,6 @@
 ---
 title: "Papers"
 subtitle: "Preprints, notes, and PDF drafts"
-page-layout: full
-toc: false
 ---
 
 ## What’s here
@@ -12,36 +10,49 @@ toc: false
 
 ---
 
-## Paper notes (QMD/MD)
-
-```{=yaml}
-listing:
-  contents:
-    - .
-  type: grid
-  sort: "date desc"
-  fields: [title, date, description, categories]
-  filter-ui: true
-  categories: true
-  include-ext: [qmd, md]
-
-## PDF library
+## File Index
 
 ```{python}
-import re
-from pathlib import Path
+#| echo: false
 
-root = Path("papers")
-pdfs = sorted(
-    p for p in root.glob("*.pdf")
-    if p.name.lower() != "index.pdf"
-)
+import os
+from html import escape
+from IPython.display import HTML, display
 
-def nice_title(name):
-    name = re.sub(r"[_-]+", " ", name)
-    name = re.sub(r"\s+", " ", name).strip()
-    return name[:-4] if name.lower().endswith(".pdf") else name
+files = [
+    f for f in os.listdir(".")
+    if f.endswith((".qmd", ".md", ".pdf"))
+    and f not in ("index.qmd", "index.html")
+]
+files.sort()
 
-lines = [f"- [{nice_title(p.name)}]({p.name})" for p in pdfs]
+cards = []
+for f in files:
+    name, ext = os.path.splitext(f)
+    display_name = name.replace("_", " ").replace("-", " ")
+    file_type = ext[1:].lower()
 
-print("\n".join(lines) if lines else "_No PDFs yet._")
+    # QMD should link to rendered HTML
+    href = f"{name}.html" if file_type in ("qmd", "md") else f
+
+    target = '_blank' if file_type == 'pdf' else '_self'
+
+    cards.append(f"""
+<div class="file-card">
+  <a href="{escape(href)}" target="{target}" class="file-link">
+    <div class="file-top">
+      <span class="file-pill {escape(file_type)}">{escape(file_type)}</span>
+    </div>
+    <div class="file-title"><strong>{escape(display_name)}</strong></div>
+  </a>
+</div>
+""")
+
+html = f"""
+<div class="file-grid">
+  {''.join(cards)}
+</div>
+"""
+
+display(HTML(html))
+```

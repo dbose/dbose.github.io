@@ -1,5 +1,7 @@
 project:
   type: website
+  resources:
+    - "*.pdf"
 
 website:
   title: "Deb Bose"
@@ -23,6 +25,7 @@ website:
 format:
   html:
     theme: cosmo
+    css: styles.css
     toc: true
     code-copy: true
     code-overflow: wrap
