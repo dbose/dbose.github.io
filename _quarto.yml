@@ -1,0 +1,33 @@
+project:
+  type: website
+
+website:
+  title: "Deb Bose"
+  site-url: "https://dbose.github.io"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: posts/
+        text: Articles
+      - href: notebooks/
+        text: Notebooks
+      - href: papers/
+        text: Papers
+      - href: about.qmd
+        text: About
+    right:
+      - icon: github
+        href: https://github.com/dbose
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-copy: true
+    code-overflow: wrap
+
+execute:
+  # Option A (recommended for “hassle-free + fast CI”):
+  # You execute notebooks locally once; results get cached in _freeze and committed.
+  freeze: auto

@@ -1,0 +1,14 @@
+---
+title: "Deb Bose"
+subtitle: "Research • Notebooks • Papers • Projects"
+---
+
+## What you'll find here
+
+- **Articles**: essays, market notes, technical deep dives  
+- **Notebooks**: runnable research with code + charts  
+- **Papers**: PDFs + references  
+- **Projects**: links to my GitHub work
+
+### Latest articles
+- Go to [Articles](/posts/)
