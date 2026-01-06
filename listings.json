@@ -2,5 +2,11 @@
   {
     "listing": "/posts/2026-01-06-my-first-post.html",
     "items": []
+  },
+  {
+    "listing": "/notebooks/index.html",
+    "items": [
+      "/notebooks/my-notebook.html"
+    ]
   }
 ]

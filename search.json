@@ -26,5 +26,12 @@
     "title": "My first Quarto post",
     "section": "",
     "text": "Some text.\nInline math: \\(I_t = f(1/C_t)\\)\n\nimport math\nmath.sqrt(2)\n\n1.4142135623730951\n\n\n\n\n\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "notebooks/index.html",
+    "href": "notebooks/index.html",
+    "title": "Notebooks",
+    "section": "",
+    "text": "Browse my research notebooks below.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNo matching items"
   }
 ]
