@@ -1,0 +1,10 @@
+---
+title: "Notebooks"
+listing:
+  contents: .
+  type: default
+  sort: "date desc"
+  fields: [title, date, description]
+---
+
+Browse my research notebooks below.

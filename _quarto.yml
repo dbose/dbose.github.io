@@ -10,7 +10,7 @@ website:
         text: Home
       - href: posts/
         text: Articles
-      - href: notebooks/
+      - href: notebooks/index.qmd
         text: Notebooks
       - href: papers/
         text: Papers
