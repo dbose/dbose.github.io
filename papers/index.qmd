@@ -1,0 +1,47 @@
+---
+title: "Papers"
+subtitle: "Preprints, notes, and PDF drafts"
+page-layout: full
+toc: false
+---
+
+## What’s here
+
+- **PDF papers** (preprints, drafts, slide-like PDFs)
+- **Markdown/QMD notes** that accompany papers (methods, references, appendices)
+
+---
+
+## Paper notes (QMD/MD)
+
+```{=yaml}
+listing:
+  contents:
+    - .
+  type: grid
+  sort: "date desc"
+  fields: [title, date, description, categories]
+  filter-ui: true
+  categories: true
+  include-ext: [qmd, md]
+
+## PDF library
+
+```{python}
+import re
+from pathlib import Path
+
+root = Path("papers")
+pdfs = sorted(
+    p for p in root.glob("*.pdf")
+    if p.name.lower() != "index.pdf"
+)
+
+def nice_title(name):
+    name = re.sub(r"[_-]+", " ", name)
+    name = re.sub(r"\s+", " ", name).strip()
+    return name[:-4] if name.lower().endswith(".pdf") else name
+
+lines = [f"- [{nice_title(p.name)}]({p.name})" for p in pdfs]
+
+print("\n".join(lines) if lines else "_No PDFs yet._")

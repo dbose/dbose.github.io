@@ -12,7 +12,7 @@ website:
         text: Articles
       - href: notebooks/index.qmd
         text: Notebooks
-      - href: papers/
+      - href: papers/index.qmd
         text: Papers
       - href: about.qmd
         text: About
