@@ -221,14 +221,21 @@
     "href": "index.html",
     "title": "Deb Bose",
     "section": "",
-    "text": "Articles: essays, market notes, technical deep dives\n\nNotebooks: runnable research with code + charts\n\nPapers: PDFs + references\n\nProjects: links to my GitHub work\n\n\n\n\nGo to Articles"
+    "text": "This site is a working archive — not a feed.\nEverything here is oriented toward truth-seeking through analysis:\nquantitative reasoning where possible, first-principles thinking where necessary, and skepticism toward narratives that don’t survive contact with data."
   },
   {
     "objectID": "index.html#what-youll-find-here",
     "href": "index.html#what-youll-find-here",
     "title": "Deb Bose",
-    "section": "",
-    "text": "Articles: essays, market notes, technical deep dives\n\nNotebooks: runnable research with code + charts\n\nPapers: PDFs + references\n\nProjects: links to my GitHub work\n\n\n\n\nGo to Articles"
+    "section": "What you’ll find here",
+    "text": "What you’ll find here\n\nArticles\nEssays, market notes, and technical deep dives — written to clarify, not to perform.\n\n\nNotebooks\nRunnable research with code, charts, and assumptions made explicit.\nExploratory by design, not polished marketing artefacts.\n\n\nPapers\nDrafts, PDFs, and reference material — including work that is incomplete, evolving, or deliberately unresolved.\n\n\nProjects\nPointers to my GitHub work: tools, models, and systems built to answer specific questions."
+  },
+  {
+    "objectID": "index.html#latest-writing",
+    "href": "index.html#latest-writing",
+    "title": "Deb Bose",
+    "section": "Latest writing",
+    "text": "Latest writing\n\n→ Go to Papers\n→ Go to Notebooks"
   },
   {
     "objectID": "posts/2026-01-06-my-first-post.html",
