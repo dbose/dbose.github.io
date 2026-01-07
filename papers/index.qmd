@@ -1,6 +1,10 @@
 ---
 title: "Papers"
 subtitle: "Preprints, notes, and PDF drafts"
+listing:
+  contents: .
+  type: grid
+  sort: "date desc"
 ---
 
 ## What’s here
@@ -81,11 +85,11 @@ for f in files:
 out = []
 
 if note_cards:
-    out.append("<h2>My Papers (WIP)</h2>")
+    out.append("<h2>Papers (WIP)</h2>")
     out.append('<div class="file-grid">' + "".join(note_cards) + "</div>")
 
 if my_pdf_cards:
-    out.append("<h2>My Research PDFs</h2>")
+    out.append("<h2>Research PDFs</h2>")
     out.append('<div class="file-grid">' + "".join(my_pdf_cards) + "</div>")
 
 if ref_pdf_cards:
