@@ -1,0 +1,58 @@
+---
+title: "About"
+---
+
+Data engineer/scientist and quantitative researcher with 18 years building systems that extract signal from noise.
+
+My work spans system engineering, ML, data engineering, portfolio analytics, and economic research—always anchored in first-principles thinking and empirical validation. I don't chase narratives that don't survive contact with data.
+
+## Current Work
+
+**Data Engineering & Analytics**  
+Leading data platform modernization at Macquarie Group: DBT/Iceberg/Redshift architectures, data governance through DBT & Collier, and observable data pipelines.
+
+**Investment Research**  
+Developing quantitative frameworks for portfolio construction and long-term portfolio strategy.
+
+**Systems Thinking**  
+Building graph-based intelligence platforms for venture capital analysis and exploring applications of ML/AI to financial domains.
+
+## Background
+
+**Technical:** Data engineering at scale • DBT, Spark, Redshift, Iceberg • ML/AI (graph networks, probabilistic models) • LLMs & Beyond (JEPA) • Modern development (Python, R, AWS) • Blockchain/decentralized systems
+
+**Analytical:** Quantitative finance • Portfolio analytics • Economic time-series analysis • CFA Level 1 • Data governance (BCBS 239, CPG 235)
+
+**Domain Experience:** Financial services • Media/publishing • Healthcare • Renewables/energy • Gaming
+
+## Previous Roles
+
+- Senior Manager/Lead Engineer at Boson Research Advisory (2023-2025) 
+- Product Manager at Hydroverse •
+- Various roles at Sky News, Fairfax Media, Zynga, Oracle, and startups across Sydney, San Francisco, and Bangalore.
+
+## Published Work
+
+**[Crusade Against Kidney Disease](https://crusadekidneydisease.com/)** (2021)  
+Research synthesis on slowing CKD progression through evidence-based interventions. Written after watching family members navigate clinical treatment failures. Not-for-profit.
+
+## Interests
+
+Outside of work: `evolutionary economics`, `self-sustainability`, genetic-based health optimization, and long-term systems thinking.
+
+## Site Philosophy
+
+This site archives my research, notebooks, and projects. It's organized for reference and discovery, not chronology. Everything here prioritizes:
+
+- **Quantitative reasoning** where possible
+- **First-principles thinking** where necessary  
+- **Skepticism** toward narratives unsupported by data
+
+If you're looking for polished marketing material, this isn't it. If you're looking for working analysis with code and assumptions made explicit, you're in the right place.
+
+---
+
+**Connect**  
+[GitHub](https://github.com/dbose) • [LinkedIn](https://www.linkedin.com/in/your-profile/)
+
+**Location:** Sydney, Australia
