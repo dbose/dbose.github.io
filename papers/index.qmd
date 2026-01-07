@@ -10,15 +10,17 @@ subtitle: "Preprints, notes, and PDF drafts"
 
 ---
 
-## File Index
-
 ```{python}
 #| echo: false
 
 import os
+from pathlib import Path
 from html import escape
 from IPython.display import HTML, display
 
+HERE = Path(".")
+
+# Collect files for the index
 files = [
     f for f in os.listdir(".")
     if f.endswith((".qmd", ".md", ".pdf"))
@@ -26,33 +28,72 @@ files = [
 ]
 files.sort()
 
-cards = []
+# Helper: build card html
+def card_html(title, href, pill, target="_self", subtitle=None):
+    subtitle_html = f'<div class="file-subtitle">{escape(subtitle)}</div>' if subtitle else ""
+    return f"""
+<div class="file-card">
+  <a href="{escape(href)}" target="{target}" class="file-link">
+    <div class="file-top">
+      <span class="file-pill {escape(pill)}">{escape(pill)}</span>
+    </div>
+    <div class="file-title"><strong>{escape(title)}</strong></div>
+    {subtitle_html}
+  </a>
+</div>
+"""
+
+# Split into buckets
+note_cards = []        # qmd/md pages (rendered html)
+my_pdf_cards = []      # pdfs with .meta.yml present
+ref_pdf_cards = []     # pdfs without .meta.yml (default reference)
+
 for f in files:
+    p = HERE / f
     name, ext = os.path.splitext(f)
     display_name = name.replace("_", " ").replace("-", " ")
     file_type = ext[1:].lower()
 
-    # QMD should link to rendered HTML
-    href = f"{name}.html" if file_type in ("qmd", "md") else f
+    if file_type in ("qmd", "md"):
+        # render link to html
+        href = f"{name}.html"
+        note_cards.append(card_html(display_name, href, "markdown", target="_self"))
 
-    target = '_blank' if file_type == 'pdf' else '_self'
+    elif file_type == "pdf":
+        # Ownership rule: if <pdf-name>.meta.yml exists -> "mine", else reference
+        meta = HERE / f"{name}.meta.yml"
+        is_mine = meta.exists()
 
-    cards.append(f"""
-<div class="file-card">
-  <a href="{escape(href)}" target="{target}" class="file-link">
-    <div class="file-top">
-      <span class="file-pill {escape(file_type)}">{escape(file_type)}</span>
-    </div>
-    <div class="file-title"><strong>{escape(display_name)}</strong></div>
-  </a>
-</div>
-""")
+        # Optional companion notes page (if exists, show subtitle / link still goes to pdf)
+        companion = None
+        if (HERE / f"{name}.qmd").exists() or (HERE / f"{name}.md").exists():
+            companion = f"Notes: {name}.html"
 
-html = f"""
-<div class="file-grid">
-  {''.join(cards)}
-</div>
-"""
+        href = f  # direct pdf
+        target = "_blank"
 
-display(HTML(html))
+        if is_mine:
+            my_pdf_cards.append(card_html(display_name, href, "pdf", target=target, subtitle=companion))
+        else:
+            ref_pdf_cards.append(card_html(display_name, href, "reference", target=target, subtitle=companion))
+
+# Render sections
+out = []
+
+if note_cards:
+    out.append("<h2>My Papers (WIP)</h2>")
+    out.append('<div class="file-grid">' + "".join(note_cards) + "</div>")
+
+if my_pdf_cards:
+    out.append("<h2>My Research PDFs</h2>")
+    out.append('<div class="file-grid">' + "".join(my_pdf_cards) + "</div>")
+
+if ref_pdf_cards:
+    out.append("<h2>References</h2>")
+    out.append('<div class="file-grid">' + "".join(ref_pdf_cards) + "</div>")
+
+if not out:
+    out.append('<p class="muted">Nothing here yet.</p>')
+
+display(HTML("\n".join(out)))
 ```
