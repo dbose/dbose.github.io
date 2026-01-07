@@ -1,51 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://dbose.github.io/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html</loc>
-    <lastmod>2026-01-07T08:01:02.968Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html</loc>
-    <lastmod>2026-01-07T08:01:02.963Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/Aerospace-defense-industry-overview-investment-thesis.meta.html</loc>
-    <lastmod>2026-01-07T08:01:03.034Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/Paper_A_Revised_1971_Shock.html</loc>
-    <lastmod>2026-01-07T08:01:03.051Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/Hydroverse - Opportunity Report.meta.html</loc>
-    <lastmod>2026-01-07T08:01:03.048Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/posts/2026-01-06-my-first-post.html</loc>
-    <lastmod>2026-01-07T08:01:03.051Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/index.html</loc>
-    <lastmod>2026-01-07T08:01:02.963Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/about.html</loc>
-    <lastmod>2026-01-07T08:01:02.962Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/index.html</loc>
-    <lastmod>2026-01-07T08:01:03.051Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/AURA-Neuro–Symbolic-Energy–Efficient-Architecture-Reusing-LLM-Infrastructure.meta.html</loc>
-    <lastmod>2026-01-07T08:01:03.033Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/aerospace-defense.html</loc>
-    <lastmod>2026-01-07T08:01:03.029Z</lastmod>
+    <loc>https://dbose.github.io/notebooks/MiniFund_VolatilityRegime_Backtest_2000_2024.html</loc>
+    <lastmod>2026-01-07T12:42:14.551Z</lastmod>
   </url>
   <url>
     <loc>https://dbose.github.io/notebooks/index.html</loc>
-    <lastmod>2026-01-07T08:01:03.033Z</lastmod>
+    <lastmod>2026-01-07T12:42:14.617Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/aerospace-defense.html</loc>
+    <lastmod>2026-01-07T12:42:14.613Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/AURA-Neuro–Symbolic-Energy–Efficient-Architecture-Reusing-LLM-Infrastructure.meta.html</loc>
+    <lastmod>2026-01-07T12:42:14.617Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/index.html</loc>
+    <lastmod>2026-01-07T12:42:14.635Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/about.html</loc>
+    <lastmod>2026-01-07T12:42:14.540Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/index.html</loc>
+    <lastmod>2026-01-07T12:42:14.540Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/posts/2026-01-06-my-first-post.html</loc>
+    <lastmod>2026-01-07T12:42:14.635Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/Hydroverse - Opportunity Report.meta.html</loc>
+    <lastmod>2026-01-07T12:42:14.633Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/Paper_A_Revised_1971_Shock.html</loc>
+    <lastmod>2026-01-07T12:42:14.635Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/Aerospace-defense-industry-overview-investment-thesis.meta.html</loc>
+    <lastmod>2026-01-07T12:42:14.618Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html</loc>
+    <lastmod>2026-01-07T12:42:14.540Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html</loc>
+    <lastmod>2026-01-07T12:42:14.545Z</lastmod>
   </url>
 </urlset>

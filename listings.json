@@ -1,7 +1,12 @@
 [
   {
-    "listing": "/posts/2026-01-06-my-first-post.html",
-    "items": []
+    "listing": "/notebooks/index.html",
+    "items": [
+      "/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html",
+      "/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html",
+      "/notebooks/aerospace-defense.html",
+      "/notebooks/MiniFund_VolatilityRegime_Backtest_2000_2024.html"
+    ]
   },
   {
     "listing": "/papers/index.html",
@@ -13,11 +18,7 @@
     ]
   },
   {
-    "listing": "/notebooks/index.html",
-    "items": [
-      "/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html",
-      "/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html",
-      "/notebooks/aerospace-defense.html"
-    ]
+    "listing": "/posts/2026-01-06-my-first-post.html",
+    "items": []
   }
 ]
