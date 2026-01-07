@@ -54,20 +54,20 @@ for f in files:
     display_name = name.replace("_", " ").replace("-", " ")
     file_type = ext[1:].lower()
 
-    if file_type in ("qmd", "md"):
+    if file_type in ("qmd", "md") and not name.endswith(".meta"):
         # render link to html
         href = f"{name}.html"
         note_cards.append(card_html(display_name, href, "markdown", target="_self"))
 
     elif file_type == "pdf":
-        # Ownership rule: if <pdf-name>.meta.yml exists -> "mine", else reference
-        meta = HERE / f"{name}.meta.yml"
+        # Ownership rule: if <pdf-name>.meta.qmd exists -> "mine", else reference
+        meta = HERE / f"{name}.meta.qmd"
         is_mine = meta.exists()
 
         # Optional companion notes page (if exists, show subtitle / link still goes to pdf)
         companion = None
-        if (HERE / f"{name}.qmd").exists() or (HERE / f"{name}.md").exists():
-            companion = f"Notes: {name}.html"
+        if meta.exists():
+            companion = f"PDF: {name}.html"
 
         href = f  # direct pdf
         target = "_blank"
