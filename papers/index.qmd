@@ -1,0 +1,103 @@
+---
+title: "Papers"
+subtitle: "Preprints, notes, and PDF drafts"
+listing:
+  contents: .
+  type: grid
+  sort: "date desc"
+---
+
+## What’s here
+
+- **PDF papers** (preprints, drafts, slide-like PDFs)
+- **Markdown/QMD notes** that accompany papers (methods, references, appendices)
+
+---
+
+```{python}
+#| echo: false
+
+import os
+from pathlib import Path
+from html import escape
+from IPython.display import HTML, display
+
+HERE = Path(".")
+
+# Collect files for the index
+files = [
+    f for f in os.listdir(".")
+    if f.endswith((".qmd", ".md", ".pdf"))
+    and f not in ("index.qmd", "index.html")
+]
+files.sort()
+
+# Helper: build card html
+def card_html(title, href, pill, target="_self", subtitle=None):
+    subtitle_html = f'<div class="file-subtitle">{escape(subtitle)}</div>' if subtitle else ""
+    return f"""
+<div class="file-card">
+  <a href="{escape(href)}" target="{target}" class="file-link">
+    <div class="file-top">
+      <span class="file-pill {escape(pill)}">{escape(pill)}</span>
+    </div>
+    <div class="file-title"><strong>{escape(title)}</strong></div>
+    {subtitle_html}
+  </a>
+</div>
+"""
+
+# Split into buckets
+note_cards = []        # qmd/md pages (rendered html)
+my_pdf_cards = []      # pdfs with .meta.yml present
+ref_pdf_cards = []     # pdfs without .meta.yml (default reference)
+
+for f in files:
+    p = HERE / f
+    name, ext = os.path.splitext(f)
+    display_name = name.replace("_", " ").replace("-", " ")
+    file_type = ext[1:].lower()
+
+    if file_type in ("qmd", "md") and not name.endswith(".meta"):
+        # render link to html
+        href = f"{name}.html"
+        note_cards.append(card_html(display_name, href, "markdown", target="_self"))
+
+    elif file_type == "pdf":
+        # Ownership rule: if <pdf-name>.meta.qmd exists -> "mine", else reference
+        meta = HERE / f"{name}.meta.qmd"
+        is_mine = meta.exists()
+
+        # Optional companion notes page (if exists, show subtitle / link still goes to pdf)
+        companion = None
+        if meta.exists():
+            companion = f"PDF: {name}.html"
+
+        href = f  # direct pdf
+        target = "_blank"
+
+        if is_mine:
+            my_pdf_cards.append(card_html(display_name, href, "pdf", target=target, subtitle=companion))
+        else:
+            ref_pdf_cards.append(card_html(display_name, href, "reference", target=target, subtitle=companion))
+
+# Render sections
+out = []
+
+if note_cards:
+    out.append("<h2>Papers (WIP)</h2>")
+    out.append('<div class="file-grid">' + "".join(note_cards) + "</div>")
+
+if my_pdf_cards:
+    out.append("<h2>Research PDFs</h2>")
+    out.append('<div class="file-grid">' + "".join(my_pdf_cards) + "</div>")
+
+if ref_pdf_cards:
+    out.append("<h2>References</h2>")
+    out.append('<div class="file-grid">' + "".join(ref_pdf_cards) + "</div>")
+
+if not out:
+    out.append('<p class="muted">Nothing here yet.</p>')
+
+display(HTML("\n".join(out)))
+```

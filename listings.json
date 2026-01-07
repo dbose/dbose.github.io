@@ -4,10 +4,20 @@
     "items": []
   },
   {
+    "listing": "/papers/index.html",
+    "items": [
+      "/papers/Hydroverse - Opportunity Report.meta.html",
+      "/papers/AURA-Neuro–Symbolic-Energy–Efficient-Architecture-Reusing-LLM-Infrastructure.meta.html",
+      "/papers/Aerospace-defense-industry-overview-investment-thesis.meta.html",
+      "/papers/Paper_A_Revised_1971_Shock.html"
+    ]
+  },
+  {
     "listing": "/notebooks/index.html",
     "items": [
       "/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html",
-      "/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html"
+      "/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html",
+      "/notebooks/aerospace-defense.html"
     ]
   }
 ]

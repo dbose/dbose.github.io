@@ -8,7 +8,6 @@
 
 <meta name="author" content="Deb Bose">
 <meta name="dcterms.date" content="2025-01-02">
-<meta name="keywords" content="Liquidity Regimes, Sparse PCA, Hidden Markov Models (HMM), Fama-French 5-Factor Model, Factor Premiums, Valuation Spreads">
 
 <title>Liquidity Regimes and the Death (and Return) of Valuations – Deb Bose</title>
 <style>
@@ -287,7 +286,17 @@ window.Quarto = {
 <div class="quarto-title">
 <h1 class="title">Liquidity Regimes and the Death (and Return) of Valuations</h1>
 <p class="subtitle lead">A 35-Year Quantitative Analysis of Factor Premiums (1990–2025)</p>
-</div>
+  <div class="quarto-categories">
+    <div class="quarto-category">quant</div>
+    <div class="quarto-category">finance</div>
+    <div class="quarto-category">Liquidity Regimes</div>
+    <div class="quarto-category">Sparse PCA</div>
+    <div class="quarto-category">Hidden Markov Models</div>
+    <div class="quarto-category">Fama-French</div>
+    <div class="quarto-category">Factor Premiums</div>
+    <div class="quarto-category">Valuation Spreads</div>
+  </div>
+  </div>
 
 
 
@@ -317,12 +326,6 @@ window.Quarto = {
   </div>
 </div>
 
-<div>
-  <div class="keywords">
-    <div class="block-title">Keywords</div>
-    <p>Liquidity Regimes, Sparse PCA, Hidden Markov Models (HMM), Fama-French 5-Factor Model, Factor Premiums, Valuation Spreads</p>
-  </div>
-</div>
 
 </header>
 
@@ -466,134 +469,128 @@ V_t^{\text{spread}} = \text{Long top decile of B/M} - \text{Short bottom decile}
 <h2 class="anchored" data-anchor-id="math">9. Math</h2>
 <section id="liquidity-proxies-standardisation" class="level3">
 <h3 class="anchored" data-anchor-id="liquidity-proxies-standardisation">1. Liquidity Proxies &amp; Standardisation</h3>
-$ x_t =
-<span class="math display">\[\begin{bmatrix}
-x_{1,t} \
-x_{2,t} \
-\vdots \
+<p>Let the raw liquidity indicators be collected in the vector</p>
+<p><span class="math display">\[
+x_t =
+\begin{bmatrix}
+x_{1,t} \\
+x_{2,t} \\
+\vdots \\
 x_{J,t}
-\end{bmatrix}\]</span>
-<p><br>
-x_{J,t} \end{bmatrix} ^J $</p>
-<p>$ <em>j = </em>{t=1}^{T} x_{j,t} $</p>
-<p>$ <em>j^2 = </em>{t=1}^{T} (x_{j,t} - _j)^2 $</p>
-<p>$ z_{j,t} = , j = 1,,J $</p>
-$ z_t =
-<span class="math display">\[\begin{bmatrix}
-z_{1,t} \
-z_{2,t} \
-\vdots \
-z_{J,t}
-\end{bmatrix}\]</span>
-<p><br>
-z_{J,t} \end{bmatrix} $</p>
-<p>One may sign-flip the series so that higher <span class="math inline">\(z_{j,t}\)</span> always corresponds to easier liquidity. For example:</p>
-<p>Use <span class="math inline">\(-r^{\text{real}}_{t}\)</span> instead of <span class="math inline">\(r^{\text{real}}_{t}\)</span>.</p>
-<p>Use <span class="math inline">\(-CS_{t}\)</span> instead of <span class="math inline">\(CS_{t}\)</span>.</p>
-<p>Use <span class="math inline">\(-VIX_{t}\)</span> instead of <span class="math inline">\(VIX_{t}\)</span>.</p>
+\end{bmatrix}
+\in \mathbb{R}^J.
+\]</span></p>
+<p>For each series <span class="math display">\[x_{j,t}\]</span>, compute the sample mean <span class="math display">\[
+\mu_j = \frac{1}{T} \sum_{t=1}^{T} x_{j,t}
+\]</span> and variance <span class="math display">\[
+\sigma_j^2 = \frac{1}{T-1} \sum_{t=1}^{T} (x_{j,t} - \mu_j)^2.
+\]</span></p>
+<p>Standardised variables are then <span class="math display">\[
+z_{j,t} = \frac{x_{j,t} - \mu_j}{\sigma_j}, \qquad j = 1,\dots,J,
+\]</span> with stacked vector <span class="math display">\[z_t = (z_{1,t},\dots,z_{J,t})^\top\]</span>.</p>
+<p>Series may be sign-flipped so that higher values of <span class="math display">\[z_{j,t}\]</span> correspond to easier liquidity; for example, use <span class="math display">\[-r_t^{\text{real}}\]</span> instead of <span class="math display">\[r_t^{\text{real}}\]</span>, <span class="math display">\[-CS_t\]</span> instead of <span class="math display">\[CS_t\]</span>, and <span class="math display">\[-VIX_t\]</span> instead of <span class="math display">\[VIX_t\]</span>.</p>
 <hr>
 </section>
 <section id="example-macro-liquidity-variables" class="level3">
 <h3 class="anchored" data-anchor-id="example-macro-liquidity-variables">2. Example Macro / Liquidity Variables</h3>
-<p>$ M2_t $</p>
-<p>$ _t $</p>
-<p>$ <em>t = y</em>{10,t} - i_t $</p>
-<p>$ r_t^{} = i_t - _t^e $</p>
-<p>$ <em>t = y</em>{Baa,t} - y_{Aaa,t} $</p>
+<p>Typical inputs include <span class="math display">\[\Delta \log M2_t\]</span>, <span class="math display">\[\Delta \log \text{BS}_t\]</span>, the term spread <span class="math display">\[\text{TS}_t = y_{10,t} - i_t\]</span>, the real rate <span class="math display">\[r_t^{\text{real}} = i_t - \pi_t^e\]</span>, and the credit spread <span class="math display">\[\text{CS}_t = y_{Baa,t} - y_{Aaa,t}\]</span>.</p>
 <hr>
 </section>
 <section id="covariance-matrix-pca-liquidity-index" class="level3">
 <h3 class="anchored" data-anchor-id="covariance-matrix-pca-liquidity-index">3. Covariance Matrix &amp; PCA Liquidity Index</h3>
-<p>$ = _{t=1}^{T} z_t z_t^$</p>
-<p>$ v_k = _k v_k, k = 1,,J $</p>
-<p>$ _1 _2 _J $</p>
-<p>$ L_t = v_1^z_t $</p>
-<p>(Alternative weighted index)</p>
-<p>$ L_t = w^z_t $</p>
+<p>Define the covariance matrix <span class="math display">\[
+\Sigma = \frac{1}{T} \sum_{t=1}^{T} z_t z_t^\top.
+\]</span></p>
+<p>Let <span class="math display">\[(\lambda_k, v_k)\]</span> solve <span class="math display">\[\Sigma v_k = \lambda_k v_k\]</span>, with eigenvalues ordered <span class="math display">\[\lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_J\]</span>. The first principal-component liquidity index is then <span class="math display">\[L_t = v_1^\top z_t\]</span>. Alternatively, one may use a fixed-weight index <span class="math display">\[L_t = w^\top z_t\]</span>.</p>
 <hr>
 </section>
 <section id="hmm-liquidity-regimes" class="level3">
 <h3 class="anchored" data-anchor-id="hmm-liquidity-regimes">4. HMM Liquidity Regimes</h3>
-<p>$ s_t $</p>
-<p>$ L_t (s_t = k) (_k, _k^2), k = 1,,K $</p>
-<p>$ (s_t = j s_{t-1} = i) = p_{ij} $</p>
-$ P =
-<span class="math display">\[\begin{bmatrix}
-p_{11} &amp; \cdots &amp; p_{1K} \
-\vdots &amp; \ddots &amp; \vdots \
+<p>Let the latent regime variable satisfy <span class="math display">\[s_t \in \{1,\dots,K\}\]</span>, with regime-conditional dynamics <span class="math display">\[
+L_t \mid (s_t = k) \sim \mathcal{N}(\mu_k, \sigma_k^2).
+\]</span></p>
+<p>Transition probabilities are <span class="math display">\[\Pr(s_t = j \mid s_{t-1} = i) = p_{ij}\]</span>, forming the matrix <span class="math display">\[
+P =
+\begin{bmatrix}
+p_{11} &amp; \cdots &amp; p_{1K} \\
+\vdots &amp; \ddots &amp; \vdots \\
 p_{K1} &amp; \cdots &amp; p_{KK}
-\end{bmatrix}\]</span>
-<p>ts &amp; <br>
-p_{K1} &amp; &amp; p_{KK} \end{bmatrix}, <em>{j=1}^K p</em>{ij} = 1 &nbsp;i $</p>
-<p>(Filtered / smoothed state classification)</p>
-<p>$ <em>t = </em>{k } (s_t = k L_{1:T}) $</p>
-<p>(High- and Tight-liquidity labels)</p>
-<p>$ k_{} = _k _k $</p>
-<p>$ k_{} = _k _k $</p>
-<p>(Regime indicator using probability threshold)</p>
-<p>$ I_t^{} = $</p>
+\end{bmatrix},
+\qquad \sum_{j=1}^{K} p_{ij} = 1.
+\]</span></p>
+<p>Filtered or smoothed regime classification is given by <span class="math display">\[
+\hat{s}_t = \arg\max_{k} \Pr(s_t = k \mid L_{1:T}).
+\]</span></p>
+<p>Define the high- and tight-liquidity regimes as <span class="math display">\[k_{\text{High}} = \arg\max_k \mu_k\]</span> and <span class="math display">\[k_{\text{Tight}} = \arg\min_k \mu_k\]</span>, with indicator <span class="math display">\[
+I_t^{\text{High}} = \mathbf{1}\!\left[\Pr(s_t = k_{\text{High}} \mid L_{1:T}) &gt; 0.5\right].
+\]</span></p>
 <hr>
 </section>
 <section id="multivariate-regime-switching-optional" class="level3">
 <h3 class="anchored" data-anchor-id="multivariate-regime-switching-optional">5. Multivariate Regime-Switching (Optional)</h3>
-$ y_t =
-<span class="math display">\[\begin{bmatrix}
-L_t \
-r_t^{\text{MKT}} \
-r_t^{\text{HML}} \
-\text{VIX}_t \
+<p>In a multivariate setting, define <span class="math display">\[
+y_t =
+\begin{bmatrix}
+L_t \\
+r_t^{\text{MKT}} \\
+r_t^{\text{HML}} \\
+\text{VIX}_t \\
 \vdots
-\end{bmatrix}\]</span>
-<p>T}}<br>
-r_t^{}<br>
-_t<br>
-\end{bmatrix} $</p>
-<p>$ y_t (s_t = k) = A_k y_{t-1} + _t^{(k)} $</p>
-<p>$ _t^{(k)} (0, _k) $</p>
+\end{bmatrix},
+\]</span> with regime-dependent dynamics <span class="math display">\[y_t = A_k y_{t-1} + \varepsilon_t^{(k)}\]</span> and <span class="math display">\[\varepsilon_t^{(k)} \sim \mathcal{N}(0,\Sigma_k)\]</span> when <span class="math display">\[s_t = k\]</span>.</p>
 <hr>
 </section>
 <section id="valuation-spreads-factor-returns-by-regime" class="level3">
 <h3 class="anchored" data-anchor-id="valuation-spreads-factor-returns-by-regime">6. Valuation Spreads &amp; Factor Returns by Regime</h3>
-<p>(Valuation spread series, e.g.&nbsp;top–bottom decile)</p>
-<p>$ V_t^{} $</p>
-<p>(Regime-conditional mean valuation spread)</p>
-<p>$ {V}^{(k)} = $</p>
-<p>$ ^{(k)} = {_{t=1}^T (_t = k)} $</p>
-<p>(Difference in spreads between regimes)</p>
-<p>$ ^{()} - ^{()} $</p>
-<p>(Factor return in regime ( k ))</p>
-<p>$ r_t^{(F)} $</p>
-<p>$ {r}_F^{(k)} = $</p>
-<p>$ <em>F^{(k)} = {</em>{t=1}^T (_t = k)} $</p>
-<p>(Regime-specific Sharpe ratio)</p>
-<p>$ _F^{(k)} = $</p>
+<p>Let <span class="math display">\[V_t^{\text{spread}}\]</span> denote a valuation-spread series (e.g., top–bottom decile). The regime-conditional mean is <span class="math display">\[
+\bar{V}^{(k)} = \mathbb{E}[V_t^{\text{spread}} \mid s_t = k],
+\]</span> with sample estimate <span class="math display">\[
+\hat{\bar{V}}^{(k)} =
+\frac{\sum_{t=1}^{T} V_t^{\text{spread}} \mathbf{1}(\hat{s}_t = k)}
+{\sum_{t=1}^{T} \mathbf{1}(\hat{s}_t = k)}.
+\]</span></p>
+<p>Differences such as <span class="math display">\[\hat{\bar{V}}^{(\text{High})} - \hat{\bar{V}}^{(\text{Tight})}\]</span> summarise regime effects. Analogously, for factor returns <span class="math display">\[r_t^{(F)}\]</span>, <span class="math display">\[
+\bar{r}_F^{(k)} = \mathbb{E}[r_t^{(F)} \mid s_t = k],
+\]</span> with Sharpe ratio <span class="math display">\[\text{SR}_F^{(k)} = \hat{\bar{r}}_F^{(k)} / \hat{\sigma}_F^{(k)}\]</span>.</p>
 <hr>
 </section>
 <section id="predictive-regressions-with-liquidity" class="level3">
 <h3 class="anchored" data-anchor-id="predictive-regressions-with-liquidity">7. Predictive Regressions with Liquidity</h3>
-<p>(Continuous liquidity index)</p>
-<p>$ r_{t+1}^{(F)} = + L_t + ^c_t + _{t+1} $</p>
-<p>(Regime dummy regression)</p>
-<p>$ r_{t+1}^{(F)} = + <em>{} I_t^{} + </em>{} I_t^{} + <em>{} I_t^{} + </em>{t+1} $</p>
+<p>Continuous-index predictability is tested via <span class="math display">\[
+r_{t+1}^{(F)} = \alpha + \beta L_t + \gamma^\top c_t + \varepsilon_{t+1},
+\]</span> while regime-based predictability uses <span class="math display">\[
+r_{t+1}^{(F)} =
+\alpha
++ \delta_{\text{High}} I_t^{\text{High}}
++ \delta_{\text{Tight}} I_t^{\text{Tight}}
++ \delta_{\text{Neutral}} I_t^{\text{Neutral}}
++ \varepsilon_{t+1}.
+\]</span></p>
 <hr>
 </section>
 <section id="cross-sectional-famamacbeth-by-regime" class="level3">
 <h3 class="anchored" data-anchor-id="cross-sectional-famamacbeth-by-regime">8. Cross-Sectional (Fama–MacBeth) by Regime</h3>
-<p>(Cross-sectional regression at time ( t ))</p>
-<p>$ r_{i,t+1} = <em>t + </em>{1,t} <em>{i,t} + </em>{2,t} <em>{i,t} + </em>{3,t} <em>{i,t} + + </em>{i,t+1} $</p>
-<p>(Regime-conditional average valuation slope)</p>
-<p>$ {}_1^{(k)} = $</p>
-<p>$ <em>1^{(k)} = {</em>{t=1}^T (_t = k)} $</p>
+<p>At each time <span class="math display">\[t\]</span>, estimate <span class="math display">\[
+r_{i,t+1} =
+\alpha_t
++ \lambda_{1,t}\text{Valuation}_{i,t}
++ \lambda_{2,t}\text{Size}_{i,t}
++ \lambda_{3,t}\text{Momentum}_{i,t}
++ \dots
++ \varepsilon_{i,t+1}.
+\]</span></p>
+<p>Regime-conditional slopes satisfy <span class="math display">\[\bar{\lambda}_1^{(k)} = \mathbb{E}[\lambda_{1,t} \mid s_t = k]\]</span>, with sample analogue <span class="math display">\[
+\hat{\bar{\lambda}}_1^{(k)} =
+\frac{\sum_{t=1}^{T} \lambda_{1,t} \mathbf{1}(\hat{s}_t = k)}
+{\sum_{t=1}^{T} \mathbf{1}(\hat{s}_t = k)}.
+\]</span></p>
 <hr>
 </section>
 <section id="regime-aware-portfolio" class="level3">
 <h3 class="anchored" data-anchor-id="regime-aware-portfolio">9. Regime-Aware Portfolio</h3>
-<p>(Factor return vector and regime weights)</p>
-<p>$ f_t ^K $</p>
-<p>$ w^{(k)} ^K $</p>
-<p>$ w_t = w^{(_t)} $</p>
-<p>(Portfolio return)</p>
-<p>$ R_{p,t+1} = w_t^f_{t+1} $</p>
+<p>Let <span class="math display">\[f_t \in \mathbb{R}^K\]</span> denote factor returns and <span class="math display">\[w^{(k)} \in \mathbb{R}^K\]</span> the regime-specific weights. The applied weights are <span class="math display">\[w_t = w^{(\hat{s}_t)}\]</span>, yielding portfolio return <span class="math display">\[
+R_{p,t+1} = w_t^\top f_{t+1}.
+\]</span></p>
 </section>
 </section>
 <section id="pca-and-sparse-pca" class="level2">
