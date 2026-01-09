@@ -2,8 +2,10 @@
   {
     "listing": "/notebooks/index.html",
     "items": [
+      "/notebooks/Education and QoL-Satisfaction.html",
       "/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html",
       "/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html",
+      "/notebooks/Follow-The-Money.html",
       "/notebooks/aerospace-defense.html",
       "/notebooks/MiniFund_VolatilityRegime_Backtest_2000_2024.html"
     ]
