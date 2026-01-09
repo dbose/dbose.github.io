@@ -3,3 +3,5 @@ nbformat
 nbclient
 ipykernel
 pyyaml
+kaleido
+plotly>=6.1.1
