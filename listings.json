@@ -2,25 +2,27 @@
   {
     "listing": "/notebooks/index.html",
     "items": [
+      "/notebooks/Liquidity Regimes and the Death of Valuations - v2.html",
+      "/notebooks/mosaic-20-cancer-analysis.html",
+      "/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html",
       "/notebooks/Education and QoL-Satisfaction.html",
       "/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html",
-      "/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html",
       "/notebooks/Follow-The-Money.html",
       "/notebooks/aerospace-defense.html",
       "/notebooks/MiniFund_VolatilityRegime_Backtest_2000_2024.html"
     ]
   },
   {
+    "listing": "/posts/2026-01-06-my-first-post.html",
+    "items": []
+  },
+  {
     "listing": "/papers/index.html",
     "items": [
       "/papers/Hydroverse - Opportunity Report.meta.html",
-      "/papers/AURA-Neuro–Symbolic-Energy–Efficient-Architecture-Reusing-LLM-Infrastructure.meta.html",
       "/papers/Aerospace-defense-industry-overview-investment-thesis.meta.html",
+      "/papers/AURA-Neuro–Symbolic-Energy–Efficient-Architecture-Reusing-LLM-Infrastructure.meta.html",
       "/papers/Paper_A_Revised_1971_Shock.html"
     ]
-  },
-  {
-    "listing": "/posts/2026-01-06-my-first-post.html",
-    "items": []
   }
 ]
