@@ -3,6 +3,7 @@ project:
   resources:
     - "*.pdf"
     - "papers/**"
+    - "posts/**"
 
 website:
   title: "Deb Bose"

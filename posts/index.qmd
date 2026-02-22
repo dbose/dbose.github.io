@@ -1,3 +1,5 @@
+---
+title: "Articles"
 listing:
   contents: .
   sort: "date desc"
@@ -5,3 +7,6 @@ listing:
   fields: [date, title, description]
 page-layout: article
 toc: true
+---
+
+Browse my articles and working papers below.
