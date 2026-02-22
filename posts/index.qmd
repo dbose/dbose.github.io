@@ -1,0 +1,12 @@
+---
+title: "Articles"
+listing:
+  contents: .
+  sort: "date desc"
+  type: default
+  fields: [date, title, description]
+page-layout: article
+toc: true
+---
+
+Browse my articles and working papers below.

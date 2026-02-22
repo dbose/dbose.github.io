@@ -13,8 +13,11 @@
     ]
   },
   {
-    "listing": "/posts/2026-01-06-my-first-post.html",
-    "items": []
+    "listing": "/posts/index.html",
+    "items": [
+      "/posts/pagerank_critique.html",
+      "/posts/2026-01-06-my-first-post.html"
+    ]
   },
   {
     "listing": "/papers/index.html",

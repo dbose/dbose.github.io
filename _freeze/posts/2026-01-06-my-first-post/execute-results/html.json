@@ -1,0 +1,12 @@
+{
+  "hash": "faf73537cc6d614d95eebd8264c894cd",
+  "result": {
+    "engine": "jupyter",
+    "markdown": "---\ntitle: \"My first Quarto post\"\ndate: 2026-01-06\ndescription: \"Hello world + why Quarto\"\ncategories: [quarto, research]\n---\n\nSome text.\n\nInline math: $I_t = f(1/C_t)$\n\n::: {#c1c6f207 .cell execution_count=1}\n``` {.python .cell-code}\nimport math\nmath.sqrt(2)\n```\n\n::: {.cell-output .cell-output-display execution_count=1}\n```\n1.4142135623730951\n```\n:::\n:::\n\n\n",
+    "supporting": [
+      "2026-01-06-my-first-post_files"
+    ],
+    "filters": [],
+    "includes": {}
+  }
+}

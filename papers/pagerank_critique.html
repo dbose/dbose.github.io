@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="D. Bose">
+<meta name="dcterms.date" content="2026-02-22">
+<meta name="description" content="A formal critique of PageRank as an inter-subjective popularity contest incapable of surfacing marginal truth, with a proof of collusion-susceptibility for O(log N) coalitions, analysis of the institutional epistemic loop, and a proposed BFT TruthChain architecture combining independence-weighted citation scoring, Brier-anchored content quality functions, and adversarial audit governance as a collusion-resistant retrieval alternative.">
+
+<title>PageRank as a Popularity Contest: Structural Vulnerabilities, Collusion Dynamics, and a Byzantine Fault-Tolerant Alternative – Deb Bose</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-b3b235ae6ba71d6e5c2a90c00144237d.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Deb Bose</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../posts/"> 
+<span class="menu-text">Articles</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../notebooks/index.html"> 
+<span class="menu-text">Notebooks</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../papers/index.html"> 
+<span class="menu-text">Papers</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/dbose"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#pagerank-as-a-popularity-contest-structural-vulnerabilities-collusion-dynamics-and-a-byzantine-fault-tolerant-alternative" id="toc-pagerank-as-a-popularity-contest-structural-vulnerabilities-collusion-dynamics-and-a-byzantine-fault-tolerant-alternative" class="nav-link active" data-scroll-target="#pagerank-as-a-popularity-contest-structural-vulnerabilities-collusion-dynamics-and-a-byzantine-fault-tolerant-alternative"><span class="header-section-number">1</span> PageRank as a Popularity Contest: Structural Vulnerabilities, Collusion Dynamics, and a Byzantine Fault-Tolerant Alternative</a>
+  <ul class="collapse">
+  <li><a href="#the-pagerank-formalism-elegance-and-hidden-assumptions" id="toc-the-pagerank-formalism-elegance-and-hidden-assumptions" class="nav-link" data-scroll-target="#the-pagerank-formalism-elegance-and-hidden-assumptions"><span class="header-section-number">1.1</span> 1. The PageRank Formalism: Elegance and Hidden Assumptions</a>
+  <ul class="collapse">
+  <li><a href="#the-stationary-distribution-interpretation" id="toc-the-stationary-distribution-interpretation" class="nav-link" data-scroll-target="#the-stationary-distribution-interpretation"><span class="header-section-number">1.1.1</span> 1.1 The Stationary Distribution Interpretation</a></li>
+  <li><a href="#what-pagerank-actually-measures" id="toc-what-pagerank-actually-measures" class="nav-link" data-scroll-target="#what-pagerank-actually-measures"><span class="header-section-number">1.1.2</span> 1.2 What PageRank Actually Measures</a></li>
+  </ul></li>
+  <li><a href="#the-collusion-problem-a-mathematical-proof" id="toc-the-collusion-problem-a-mathematical-proof" class="nav-link" data-scroll-target="#the-collusion-problem-a-mathematical-proof"><span class="header-section-number">1.2</span> 2. The Collusion Problem: A Mathematical Proof</a>
+  <ul class="collapse">
+  <li><a href="#authority-injection-via-coalition" id="toc-authority-injection-via-coalition" class="nav-link" data-scroll-target="#authority-injection-via-coalition"><span class="header-section-number">1.2.1</span> 2.1 Authority Injection via Coalition</a></li>
+  <li><a href="#the-de-facto-institutional-authority-premium" id="toc-the-de-facto-institutional-authority-premium" class="nav-link" data-scroll-target="#the-de-facto-institutional-authority-premium"><span class="header-section-number">1.2.2</span> 2.2 The De Facto Institutional Authority Premium</a></li>
+  <li><a href="#the-eigenvector-of-power-not-truth" id="toc-the-eigenvector-of-power-not-truth" class="nav-link" data-scroll-target="#the-eigenvector-of-power-not-truth"><span class="header-section-number">1.2.3</span> 2.3 The Eigenvector of Power, Not Truth</a></li>
+  </ul></li>
+  <li><a href="#the-closed-epistemic-loop" id="toc-the-closed-epistemic-loop" class="nav-link" data-scroll-target="#the-closed-epistemic-loop"><span class="header-section-number">1.3</span> 3. The Closed Epistemic Loop</a>
+  <ul class="collapse">
+  <li><a href="#institutional-gatekeeping-architecture" id="toc-institutional-gatekeeping-architecture" class="nav-link" data-scroll-target="#institutional-gatekeeping-architecture"><span class="header-section-number">1.3.1</span> 3.1 Institutional Gatekeeping Architecture</a></li>
+  <li><a href="#the-seo-industry-as-revealed-preference" id="toc-the-seo-industry-as-revealed-preference" class="nav-link" data-scroll-target="#the-seo-industry-as-revealed-preference"><span class="header-section-number">1.3.2</span> 3.2 The SEO Industry as Revealed Preference</a></li>
+  </ul></li>
+  <li><a href="#llms-as-retrieval-systems-promise-and-inherited-bias" id="toc-llms-as-retrieval-systems-promise-and-inherited-bias" class="nav-link" data-scroll-target="#llms-as-retrieval-systems-promise-and-inherited-bias"><span class="header-section-number">1.4</span> 4. LLMs as Retrieval Systems: Promise and Inherited Bias</a>
+  <ul class="collapse">
+  <li><a href="#the-parametric-knowledge-advantage" id="toc-the-parametric-knowledge-advantage" class="nav-link" data-scroll-target="#the-parametric-knowledge-advantage"><span class="header-section-number">1.4.1</span> 4.1 The Parametric Knowledge Advantage</a></li>
+  <li><a href="#retrieval-augmented-generation-as-graph-free-ranking" id="toc-retrieval-augmented-generation-as-graph-free-ranking" class="nav-link" data-scroll-target="#retrieval-augmented-generation-as-graph-free-ranking"><span class="header-section-number">1.4.2</span> 4.2 Retrieval-Augmented Generation as Graph-Free Ranking</a></li>
+  <li><a href="#the-corpus-contamination-problem" id="toc-the-corpus-contamination-problem" class="nav-link" data-scroll-target="#the-corpus-contamination-problem"><span class="header-section-number">1.4.3</span> 4.3 The Corpus Contamination Problem</a></li>
+  </ul></li>
+  <li><a href="#the-economic-disruption-llms-vs.-google-serp" id="toc-the-economic-disruption-llms-vs.-google-serp" class="nav-link" data-scroll-target="#the-economic-disruption-llms-vs.-google-serp"><span class="header-section-number">1.5</span> 5. The Economic Disruption: LLMs vs.&nbsp;Google SERP</a>
+  <ul class="collapse">
+  <li><a href="#click-erosion-by-query-type" id="toc-click-erosion-by-query-type" class="nav-link" data-scroll-target="#click-erosion-by-query-type"><span class="header-section-number">1.5.1</span> 5.1 Click Erosion by Query Type</a></li>
+  <li><a href="#a-simple-model-of-click-displacement" id="toc-a-simple-model-of-click-displacement" class="nav-link" data-scroll-target="#a-simple-model-of-click-displacement"><span class="header-section-number">1.5.2</span> 5.2 A Simple Model of Click Displacement</a></li>
+  </ul></li>
+  <li><a href="#towards-a-bft-truthchain-a-collusion-resistant-architecture" id="toc-towards-a-bft-truthchain-a-collusion-resistant-architecture" class="nav-link" data-scroll-target="#towards-a-bft-truthchain-a-collusion-resistant-architecture"><span class="header-section-number">1.6</span> 6. Towards a BFT TruthChain: A Collusion-Resistant Architecture</a>
+  <ul class="collapse">
+  <li><a href="#the-byzantine-analogy" id="toc-the-byzantine-analogy" class="nav-link" data-scroll-target="#the-byzantine-analogy"><span class="header-section-number">1.6.1</span> 6.1 The Byzantine Analogy</a></li>
+  <li><a href="#layer-1-independence-weighted-citation-graph" id="toc-layer-1-independence-weighted-citation-graph" class="nav-link" data-scroll-target="#layer-1-independence-weighted-citation-graph"><span class="header-section-number">1.6.2</span> 6.2 Layer 1 — Independence-Weighted Citation Graph</a></li>
+  <li><a href="#layer-2-topology-independent-content-quality-scoring" id="toc-layer-2-topology-independent-content-quality-scoring" class="nav-link" data-scroll-target="#layer-2-topology-independent-content-quality-scoring"><span class="header-section-number">1.6.3</span> 6.3 Layer 2 — Topology-Independent Content Quality Scoring</a></li>
+  <li><a href="#layer-3-epistemic-diversity-preservation" id="toc-layer-3-epistemic-diversity-preservation" class="nav-link" data-scroll-target="#layer-3-epistemic-diversity-preservation"><span class="header-section-number">1.6.4</span> 6.4 Layer 3 — Epistemic Diversity Preservation</a></li>
+  <li><a href="#the-reputation-staking-mechanism" id="toc-the-reputation-staking-mechanism" class="nav-link" data-scroll-target="#the-reputation-staking-mechanism"><span class="header-section-number">1.6.5</span> 6.5 The Reputation Staking Mechanism</a></li>
+  <li><a href="#goodharts-law-why-the-brier-score-is-the-adversarial-anchor" id="toc-goodharts-law-why-the-brier-score-is-the-adversarial-anchor" class="nav-link" data-scroll-target="#goodharts-law-why-the-brier-score-is-the-adversarial-anchor"><span class="header-section-number">1.6.6</span> 6.6 Goodhart’s Law: Why the Brier Score is the Adversarial Anchor</a></li>
+  <li><a href="#the-bootstrapping-problem-and-adversarial-audit-governance" id="toc-the-bootstrapping-problem-and-adversarial-audit-governance" class="nav-link" data-scroll-target="#the-bootstrapping-problem-and-adversarial-audit-governance"><span class="header-section-number">1.6.7</span> 6.7 The Bootstrapping Problem and Adversarial Audit Governance</a></li>
+  </ul></li>
+  <li><a href="#discussion-implementation-pathway-and-institutional-resistance" id="toc-discussion-implementation-pathway-and-institutional-resistance" class="nav-link" data-scroll-target="#discussion-implementation-pathway-and-institutional-resistance"><span class="header-section-number">1.7</span> 7. Discussion: Implementation Pathway and Institutional Resistance</a>
+  <ul class="collapse">
+  <li><a href="#a-tractable-near-term-version" id="toc-a-tractable-near-term-version" class="nav-link" data-scroll-target="#a-tractable-near-term-version"><span class="header-section-number">1.7.1</span> 7.1 A Tractable Near-Term Version</a></li>
+  <li><a href="#why-incumbents-will-not-build-this" id="toc-why-incumbents-will-not-build-this" class="nav-link" data-scroll-target="#why-incumbents-will-not-build-this"><span class="header-section-number">1.7.2</span> 7.2 Why Incumbents Will Not Build This</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">1.8</span> 8. Conclusion</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">1.9</span> References</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">PageRank as a Popularity Contest: Structural Vulnerabilities, Collusion Dynamics, and a Byzantine Fault-Tolerant Alternative</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">Information Retrieval</div>
+    <div class="quarto-category">Graph Theory</div>
+    <div class="quarto-category">Byzantine Fault Tolerance</div>
+    <div class="quarto-category">Search Engines</div>
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">AI</div>
+    <div class="quarto-category">Epistemology</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    A formal critique of PageRank as an inter-subjective popularity contest incapable of surfacing marginal truth, with a proof of collusion-susceptibility for O(log N) coalitions, analysis of the institutional epistemic loop, and a proposed BFT TruthChain architecture combining independence-weighted citation scoring, Brier-anchored content quality functions, and adversarial audit governance as a collusion-resistant retrieval alternative.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>D. Bose </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">February 22, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="pagerank-as-a-popularity-contest-structural-vulnerabilities-collusion-dynamics-and-a-byzantine-fault-tolerant-alternative" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> PageRank as a Popularity Contest: Structural Vulnerabilities, Collusion Dynamics, and a Byzantine Fault-Tolerant Alternative</h1>
+<p><strong>D. Bose</strong> | Sydney, NSW, Australia <em>February 2026</em>, v3.0</p>
+<hr>
+<blockquote class="blockquote">
+<p><strong>Abstract</strong> — We propose the <strong>BFT TruthChain</strong>: a collusion-resistant information retrieval architecture combining Byzantine Fault-Tolerant consensus theory, topology-independent content quality scoring anchored by Brier calibration, and an epistemic diversity bonus for high-quality heterodox content. The motivation is a formal critique of PageRank as a popularity contest: we prove that a coalition of <span class="math inline">\(O(\log N)\)</span> high-authority domains can arbitrarily elevate any target page regardless of content, that .gov/.org domains enjoy a structurally equivalent authority premium through accumulated link density, and that standard RAG pipelines inherit this bias through corpus contamination (<span class="math inline">\(P(d \in \mathcal{D}) \propto PR(d)^\eta\)</span>). Empirically, position-1 CTR under AI Overviews has collapsed from 7.6% to 1.6% (Ahrefs, 2025) and zero-click rates reached 65% by mid-2025 — confirming that the link-graph era is ending. The question is what replaces it.</p>
+</blockquote>
+<hr>
+<section id="the-pagerank-formalism-elegance-and-hidden-assumptions" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="the-pagerank-formalism-elegance-and-hidden-assumptions"><span class="header-section-number">1.1</span> 1. The PageRank Formalism: Elegance and Hidden Assumptions</h2>
+<section id="the-stationary-distribution-interpretation" class="level3" data-number="1.1.1">
+<h3 data-number="1.1.1" class="anchored" data-anchor-id="the-stationary-distribution-interpretation"><span class="header-section-number">1.1.1</span> 1.1 The Stationary Distribution Interpretation</h3>
+<p>The classic PageRank score for a page <span class="math inline">\(p\)</span> is defined as:</p>
+<p><span class="math display">\[PR(p) = \frac{1-d}{N} + d \sum_{i \in \mathcal{B}(p)} \frac{PR(i)}{L(i)}\]</span></p>
+<p>where <span class="math inline">\(d \approx 0.85\)</span> is the damping factor, <span class="math inline">\(N\)</span> is the total number of pages, <span class="math inline">\(\mathcal{B}(p)\)</span> is the set of pages linking to <span class="math inline">\(p\)</span>, and <span class="math inline">\(L(i)\)</span> is the out-degree of page <span class="math inline">\(i\)</span>. This is equivalent to the stationary distribution <span class="math inline">\(\boldsymbol{\pi}\)</span> of a modified random-walk Markov chain with transition matrix:</p>
+<p><span class="math display">\[\mathbf{M} = d\mathbf{A}^T \mathbf{D}^{-1} + \frac{(1-d)}{N}\mathbf{1}\mathbf{1}^T\]</span></p>
+<p>where <span class="math inline">\(\mathbf{A}\)</span> is the adjacency matrix of the web graph and <span class="math inline">\(\mathbf{D} = \text{diag}(L(1), \ldots, L(N))\)</span>. By the Perron–Frobenius theorem, since <span class="math inline">\(\mathbf{M}\)</span> is a positive stochastic matrix, a unique stationary distribution <span class="math inline">\(\boldsymbol{\pi}\)</span> satisfying <span class="math inline">\(\mathbf{M}\boldsymbol{\pi} = \boldsymbol{\pi}\)</span> exists. Power iteration converges geometrically at rate <span class="math inline">\(|\lambda_2/\lambda_1|\)</span> where <span class="math inline">\(\lambda_1 = 1\)</span> and <span class="math inline">\(|\lambda_2| \leq d\)</span>.</p>
+<p>The beautiful mathematics conceals a profound <em>epistemological assumption</em>: that the long-run visit frequency of a random web surfer is a proxy for <strong>informational quality</strong>. This is the original sin of PageRank — popularity is conflated with truth.</p>
+</section>
+<section id="what-pagerank-actually-measures" class="level3" data-number="1.1.2">
+<h3 data-number="1.1.2" class="anchored" data-anchor-id="what-pagerank-actually-measures"><span class="header-section-number">1.1.2</span> 1.2 What PageRank Actually Measures</h3>
+<p>Let <span class="math inline">\(\mathcal{G} = (\mathcal{V}, \mathcal{E})\)</span> be the web graph. The PageRank vector <span class="math inline">\(\boldsymbol{\pi}\)</span> measures the <em>eigenvector centrality</em> of nodes in a teleporting random walk. It is a property of the <strong>graph topology alone</strong> — not of the content at each node. Formally:</p>
+<p><span class="math display">\[\boldsymbol{\pi} = \lim_{k \to \infty} \mathbf{M}^k \boldsymbol{\pi}_0, \quad \forall\, \boldsymbol{\pi}_0 \in \Delta^{N-1}\]</span></p>
+<p>The content of page <span class="math inline">\(p\)</span> enters the ranking only indirectly, through the linking decisions of other human agents whose motivations are social, commercial, institutional, and political — not epistemically calibrated. PageRank therefore measures <strong>inter-subjective consensus</strong> within the link graph, not objective informational quality.</p>
+<hr>
+</section>
+</section>
+<section id="the-collusion-problem-a-mathematical-proof" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="the-collusion-problem-a-mathematical-proof"><span class="header-section-number">1.2</span> 2. The Collusion Problem: A Mathematical Proof</h2>
+<section id="authority-injection-via-coalition" class="level3" data-number="1.2.1">
+<h3 data-number="1.2.1" class="anchored" data-anchor-id="authority-injection-via-coalition"><span class="header-section-number">1.2.1</span> 2.1 Authority Injection via Coalition</h3>
+<p><strong>Proposition.</strong> <em>Let <span class="math inline">\(S = \{v_1, \ldots, v_k\}\)</span> be a coalition of pages with PageRank scores <span class="math inline">\(\{PR(v_j)\}\)</span> and let <span class="math inline">\(t\)</span> be a target page with <span class="math inline">\(PR(t) \approx 0\)</span>. If every <span class="math inline">\(v_j \in S\)</span> adds an outgoing link to <span class="math inline">\(t\)</span>, the new PageRank of <span class="math inline">\(t\)</span> satisfies:</em></p>
+<p><span class="math display">\[PR'(t) \geq \frac{d}{N} \sum_{j=1}^{k} \frac{PR(v_j)}{L(v_j) + 1}\]</span></p>
+<p><strong>Proof sketch.</strong> After link injection, the transition matrix <span class="math inline">\(\mathbf{M}\)</span> gains non-zero entries <span class="math inline">\(M_{t, v_j} = d / (L(v_j)+1)\)</span> for each <span class="math inline">\(j\)</span>. In the updated stationary distribution, the contribution to <span class="math inline">\(\pi_t\)</span> from <span class="math inline">\(S\)</span> alone is <span class="math inline">\(d \sum_{j} \pi_{v_j}/(L(v_j)+1)\)</span>. Adding the teleportation floor <span class="math inline">\((1-d)/N &gt; 0\)</span> yields the lower bound. <span class="math inline">\(\square\)</span></p>
+<p><strong>Corollary.</strong> If <span class="math inline">\(S\)</span> consists of high-authority domains with <span class="math inline">\(PR(v_j) \gg 1/N\)</span>, even a small coalition <span class="math inline">\(|S| = O(\log N)\)</span> can elevate <span class="math inline">\(PR'(t)\)</span> to the top decile of the distribution, regardless of the informational content of <span class="math inline">\(t\)</span>.</p>
+</section>
+<section id="the-de-facto-institutional-authority-premium" class="level3" data-number="1.2.2">
+<h3 data-number="1.2.2" class="anchored" data-anchor-id="the-de-facto-institutional-authority-premium"><span class="header-section-number">1.2.2</span> 2.2 The De Facto Institutional Authority Premium</h3>
+<p>A common misconception in the SEO industry is that Google applies an explicit TLD-level bonus to .gov and .edu domains. Google’s John Mueller has stated directly that TLD does not factor into ranking preference, and that many .edu links are actively discounted due to spam. This claim, as typically stated, is incorrect and we retract the hardcoded <span class="math inline">\(\alpha_{\text{tld}}\)</span> formulation from earlier versions of this paper.</p>
+<p>However, the weaker and more defensible version of the argument is fully sufficient. Government and major institutional domains accumulate inbound link density organically and at scale: the FDA (DA 86), NASA (DA 93), and California state government (DA 97) attract high-PageRank inbound links continuously without active link-building, simply because they are the authoritative primary sources for their subject matter. Formally, let <span class="math inline">\(\bar{D}(v)\)</span> denote the mean inbound link PageRank for domain <span class="math inline">\(v\)</span>. Then for institutional domains <span class="math inline">\(v_{\text{inst}}\)</span>:</p>
+<p><span class="math display">\[\mathbb{E}[\bar{D}(v_{\text{inst}})] \gg \mathbb{E}[\bar{D}(v_{\text{com}})]\]</span></p>
+<p>This produces a <em>structurally equivalent outcome</em> to a hardcoded TLD premium: claims published by institutional domains, and claims endorsed by IFCN-affiliated .org fact-checkers linking to those domains, sit at the eigenvector centre of the web graph by construction of how the web was built, not by algorithmic fiat. The closed epistemic loop operates identically in either case — it is just that the lock-in is sociological rather than algorithmic.</p>
+</section>
+<section id="the-eigenvector-of-power-not-truth" class="level3" data-number="1.2.3">
+<h3 data-number="1.2.3" class="anchored" data-anchor-id="the-eigenvector-of-power-not-truth"><span class="header-section-number">1.2.3</span> 2.3 The Eigenvector of Power, Not Truth</h3>
+<p>Define the truth score of page <span class="math inline">\(p\)</span> as <span class="math inline">\(\tau(p) \in [0,1]\)</span>, representing factual accuracy, and let <span class="math inline">\(\boldsymbol{\tau} = (\tau(p))_{p \in \mathcal{V}} \in [0,1]^N\)</span> be the truth vector over all <span class="math inline">\(N\)</span> pages. The stationary PageRank distribution <span class="math inline">\(\boldsymbol{\pi} = (\pi(p))_{p \in \mathcal{V}} \in \Delta^{N-1}\)</span> is similarly a vector over pages. We define the <strong>cross-sectional correlation</strong> between rank and truth across the full page population as:</p>
+<p><span class="math display">\[\text{Corr}(\boldsymbol{\pi}, \boldsymbol{\tau}) = \frac{\displaystyle\sum_{p \in \mathcal{V}} \bigl(\pi(p) - \bar{\pi}\bigr)\bigl(\tau(p) - \bar{\tau}\bigr)}{\sqrt{\displaystyle\sum_{p \in \mathcal{V}}\bigl(\pi(p)-\bar{\pi}\bigr)^2} \cdot \sqrt{\displaystyle\sum_{p \in \mathcal{V}}\bigl(\tau(p)-\bar{\tau}\bigr)^2}}\]</span></p>
+<p>where <span class="math inline">\(\bar{\pi} = \frac{1}{N}\sum_{p} \pi(p) = \frac{1}{N}\)</span> and <span class="math inline">\(\bar{\tau} = \frac{1}{N}\sum_{p} \tau(p)\)</span>.</p>
+<p>There is no mechanism in the PageRank formalism that forces <span class="math inline">\(\text{Corr}(\boldsymbol{\pi}, \boldsymbol{\tau}) &gt; 0\)</span>. The transition matrix <span class="math inline">\(\mathbf{M}\)</span> is a function of the adjacency matrix <span class="math inline">\(\mathbf{A}\)</span> alone, and <span class="math inline">\(\mathbf{A}\)</span> is determined entirely by the linking behaviour of web authors — shaped by social proof, financial incentives, institutional mandates, and network effects — none of which are calibrated to <span class="math inline">\(\boldsymbol{\tau}\)</span>. Since <span class="math inline">\(\boldsymbol{\pi}\)</span> is the leading eigenvector of <span class="math inline">\(\mathbf{M}\)</span>, and <span class="math inline">\(\mathbf{M}\)</span> contains no information about <span class="math inline">\(\boldsymbol{\tau}\)</span>, the cross-sectional correlation is structurally unconstrained. In adversarial environments where high-PR actors systematically misrepresent <span class="math inline">\(\tau\)</span>, it can become <em>negative</em>.</p>
+<hr>
+</section>
+</section>
+<section id="the-closed-epistemic-loop" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="the-closed-epistemic-loop"><span class="header-section-number">1.3</span> 3. The Closed Epistemic Loop</h2>
+<section id="institutional-gatekeeping-architecture" class="level3" data-number="1.3.1">
+<h3 data-number="1.3.1" class="anchored" data-anchor-id="institutional-gatekeeping-architecture"><span class="header-section-number">1.3.1</span> 3.1 Institutional Gatekeeping Architecture</h3>
+<p>The modern web truth-ranking stack operates as a self-reinforcing three-layer system. At layer 1, primary nodes are government agencies and institutional bodies that accumulate high PageRank through natural link density (see Section 2.2). At layer 2, IFCN-affiliated fact-checkers — organisations whose funding relationships include the Gates Foundation, Open Society Foundations, and others — link to and amplify layer 1 claims, further concentrating link authority. At layer 3, platform policies on YouTube and Facebook enforce “community guidelines” that suppress pages contradicting layer 1 and 2 content, reducing their effective out-degree in the crawlable graph. The result is a <strong>closed loop</strong>: the link graph structurally encodes a specific epistemic orthodoxy. Any heterodox page faces a near-insurmountable eigenvector disadvantage — not because Google engineered this outcome, but because the sociology of institutional link-building produced it.</p>
+</section>
+<section id="the-seo-industry-as-revealed-preference" class="level3" data-number="1.3.2">
+<h3 data-number="1.3.2" class="anchored" data-anchor-id="the-seo-industry-as-revealed-preference"><span class="header-section-number">1.3.2</span> 3.2 The SEO Industry as Revealed Preference</h3>
+<p>The existence of a multi-billion dollar SEO and link-building industry is the most compelling empirical proof that PageRank does not measure truth. If PageRank were correlated with content quality, optimising it would require improving content. Instead, the dominant SEO strategy is <strong>topology manipulation</strong>. The market price of a backlink from a DA-90+ domain (circa 2024: $500–$5,000) represents the market’s estimate of <span class="math inline">\(\partial PR(t)/\partial \text{link}_{v \to t}\)</span> — the marginal authority injection value of a single edge in the graph. Truth has no such price signal.</p>
+<hr>
+</section>
+</section>
+<section id="llms-as-retrieval-systems-promise-and-inherited-bias" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="llms-as-retrieval-systems-promise-and-inherited-bias"><span class="header-section-number">1.4</span> 4. LLMs as Retrieval Systems: Promise and Inherited Bias</h2>
+<section id="the-parametric-knowledge-advantage" class="level3" data-number="1.4.1">
+<h3 data-number="1.4.1" class="anchored" data-anchor-id="the-parametric-knowledge-advantage"><span class="header-section-number">1.4.1</span> 4.1 The Parametric Knowledge Advantage</h3>
+<p>A large language model with parameters <span class="math inline">\(\boldsymbol{\theta} \in \mathbb{R}^d\)</span> (e.g., <span class="math inline">\(d \sim 7 \times 10^{11}\)</span> for GPT-4 class models) encodes a compressed, lossy representation of a training corpus <span class="math inline">\(\mathcal{D}\)</span>:</p>
+<p><span class="math display">\[\boldsymbol{\theta}^* = \arg\min_{\boldsymbol{\theta}} \sum_{x \in \mathcal{D}} \mathcal{L}(x; \boldsymbol{\theta})\]</span></p>
+<p>where <span class="math inline">\(\mathcal{L}\)</span> is the next-token prediction loss. Critically, the training objective encourages <em>internal consistency</em> across documents. A factual contradiction present in <span class="math inline">\(\mathcal{D}\)</span> creates a higher loss signal than a consistent claim, exerting gradient pressure toward coherent representations — a mechanism entirely absent from PageRank.</p>
+</section>
+<section id="retrieval-augmented-generation-as-graph-free-ranking" class="level3" data-number="1.4.2">
+<h3 data-number="1.4.2" class="anchored" data-anchor-id="retrieval-augmented-generation-as-graph-free-ranking"><span class="header-section-number">1.4.2</span> 4.2 Retrieval-Augmented Generation as Graph-Free Ranking</h3>
+<p>In RAG architectures, a query <span class="math inline">\(q\)</span> retrieves a context set <span class="math inline">\(\mathcal{C}(q) \subset \mathcal{D}\)</span> via dense retrieval:</p>
+<p><span class="math display">\[\mathcal{C}(q) = \text{TopK}_k\left\{ d \in \mathcal{D} : \text{sim}(\mathbf{e}_q, \mathbf{e}_d) \right\}, \quad \mathbf{e}_x = f_{\boldsymbol{\phi}}(x) \in \mathbb{R}^m\]</span></p>
+<p>The retrieval score is a function of <strong>semantic content</strong>, not link topology. A scientific preprint with zero inbound links but high semantic relevance outscores a heavily linked but off-topic domain. The LLM’s generative step then performs <em>implicit multi-document reasoning</em>, synthesising retrieved context to identify contradictions and qualify uncertainty.</p>
+</section>
+<section id="the-corpus-contamination-problem" class="level3" data-number="1.4.3">
+<h3 data-number="1.4.3" class="anchored" data-anchor-id="the-corpus-contamination-problem"><span class="header-section-number">1.4.3</span> 4.3 The Corpus Contamination Problem</h3>
+<p>However, RAG pipelines are not epistemically clean by default. Training corpora (Common Crawl, C4, The Pile) are dominated by high-PageRank content — because web crawlers weight coverage by link density. The probability that a document <span class="math inline">\(d\)</span> appears in the training corpus is approximately:</p>
+<p><span class="math display">\[P(d \in \mathcal{D}) \propto PR(d)^\eta, \quad \eta &gt; 0\]</span></p>
+<p>This means the LLM’s parametric knowledge inherits PageRank’s inter-subjective bias through a different channel. The bias is <em>laundered</em> — it no longer looks like a link graph, but the underlying causal structure is the same. This corpus contamination problem motivates the architecture in Section 6.</p>
+<hr>
+</section>
+</section>
+<section id="the-economic-disruption-llms-vs.-google-serp" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="the-economic-disruption-llms-vs.-google-serp"><span class="header-section-number">1.5</span> 5. The Economic Disruption: LLMs vs.&nbsp;Google SERP</h2>
+<section id="click-erosion-by-query-type" class="level3" data-number="1.5.1">
+<h3 data-number="1.5.1" class="anchored" data-anchor-id="click-erosion-by-query-type"><span class="header-section-number">1.5.1</span> 5.1 Click Erosion by Query Type</h3>
+<p>The structural impact of LLMs and AI Overviews on SERP engagement is now empirically well-documented, with effects that vary sharply by query intent. Table 1 synthesises the key data points across sources.</p>
+<hr>
+<p><strong>Table 1: CTR and Zero-Click Rates by Query Type and Era (US Desktop + Mobile)</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Query Type</th>
+<th>Zero-Click Rate 2022</th>
+<th>Zero-Click Rate 2024</th>
+<th>Zero-Click Rate 2025</th>
+<th>Pos-1 CTR (pre-AIO)</th>
+<th>Pos-1 CTR (with AIO)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Informational</td>
+<td>~45%</td>
+<td>~65%</td>
+<td>~83%</td>
+<td>7.6%</td>
+<td>1.6%</td>
+<td>Ahrefs 2025; BrightEdge 2023</td>
+</tr>
+<tr class="even">
+<td>Navigational</td>
+<td>~20%</td>
+<td>~35%</td>
+<td>~40%</td>
+<td>15–20%</td>
+<td>8–10%</td>
+<td>Pew Research 2025; SparkToro 2024</td>
+</tr>
+<tr class="odd">
+<td>Commercial</td>
+<td>~15%</td>
+<td>~25%</td>
+<td>~32%</td>
+<td>10–14%</td>
+<td>4–6%</td>
+<td>Seer Interactive 2025 (25.1M impressions)</td>
+</tr>
+<tr class="even">
+<td>Transactional</td>
+<td>~10%</td>
+<td>~18%</td>
+<td>~22%</td>
+<td>18–22%</td>
+<td>8–12%</td>
+<td>Semrush AIO Study, Oct 2025</td>
+</tr>
+<tr class="odd">
+<td><strong>All queries (blended)</strong></td>
+<td><strong>~26%</strong></td>
+<td><strong>~58.5%</strong></td>
+<td><strong>~65%</strong></td>
+<td>—</td>
+<td>—</td>
+<td>SparkToro/Datos 2024; Onely 2025</td>
+</tr>
+</tbody>
+</table>
+<p><em>Notes: AIO = AI Overviews. Pew Research (March 2025, n = 68,879 real queries) found CTR of 8% with AI summaries vs.&nbsp;15% without — a 47% relative reduction. Seer Interactive (42 organisations, 25.1M impressions) found paid CTR dropped 68% (19.7% → 6.34%) when AIO appeared. Position-1 CTR collapse for informational queries (7.6% → 1.6%) from Ahrefs comparing December 2023 vs.&nbsp;December 2025. Zero-click rate for queries triggering AI Overviews specifically reached 83% (WordStream/BrightEdge 2024).</em></p>
+<hr>
+<p>The table reveals the asymmetry clearly: informational queries — precisely those where epistemically contested content lives — have been most devastated. Transactional queries, which drive Google’s advertising revenue, have been more resilient but are now also under AIO pressure as Semrush data shows commercial intent queries growing from 8.7% to 42.9% of AIO appearances between January and October 2025.</p>
+</section>
+<section id="a-simple-model-of-click-displacement" class="level3" data-number="1.5.2">
+<h3 data-number="1.5.2" class="anchored" data-anchor-id="a-simple-model-of-click-displacement"><span class="header-section-number">1.5.2</span> 5.2 A Simple Model of Click Displacement</h3>
+<p>Let <span class="math inline">\(\beta_t \in [0,1]\)</span> be the LLM/AIO query capture rate at time <span class="math inline">\(t\)</span>. Google’s effective paid-click inventory satisfies:</p>
+<p><span class="math display">\[Q_t = Q_0 \cdot (1 - \beta_t) \cdot \text{CTR}_{\text{paid}}(\mathbf{k})\]</span></p>
+<p>With logistic adoption dynamics:</p>
+<p><span class="math display">\[\beta_t = \frac{\beta_{\max}}{1 + e^{-r(t - t_0)}}\]</span></p>
+<p>Setting <span class="math inline">\(\beta_{\max} = 0.45\)</span>, <span class="math inline">\(r = 0.8\ \text{yr}^{-1}\)</span>, <span class="math inline">\(t_0 = 2024.5\)</span>, and anchoring to the observed paid CTR collapse of 68% for AIO-present queries (Seer Interactive), the model implies <span class="math inline">\(Q_t\)</span> declining ~35% from 2024 to 2027 for informational and research query categories. The self-cannibalisation paradox is worth noting: Google’s AI Overviews are simultaneously defending search market share and destroying the paid-click monetisation model that finances the entire infrastructure.</p>
+<hr>
+</section>
+</section>
+<section id="towards-a-bft-truthchain-a-collusion-resistant-architecture" class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="towards-a-bft-truthchain-a-collusion-resistant-architecture"><span class="header-section-number">1.6</span> 6. Towards a BFT TruthChain: A Collusion-Resistant Architecture</h2>
+<section id="the-byzantine-analogy" class="level3" data-number="1.6.1">
+<h3 data-number="1.6.1" class="anchored" data-anchor-id="the-byzantine-analogy"><span class="header-section-number">1.6.1</span> 6.1 The Byzantine Analogy</h3>
+<p>PageRank has no Byzantine Fault Tolerance. Lamport, Pease and Shostak (1982) showed that a distributed system of <span class="math inline">\(n\)</span> validators can tolerate up to <span class="math inline">\(f &lt; n/3\)</span> Byzantine (malicious or faulty) nodes while preserving consensus integrity. The web’s truth consensus offers no equivalent guarantee — a coordinated minority of high-PR nodes can corrupt the global ranking indefinitely, with no slashing mechanism and no quorum requirement.</p>
+<p>We propose a three-layer architecture — the <strong>BFT TruthChain</strong> — that addresses this structural gap.</p>
+</section>
+<section id="layer-1-independence-weighted-citation-graph" class="level3" data-number="1.6.2">
+<h3 data-number="1.6.2" class="anchored" data-anchor-id="layer-1-independence-weighted-citation-graph"><span class="header-section-number">1.6.2</span> 6.2 Layer 1 — Independence-Weighted Citation Graph</h3>
+<p>The first departure from PageRank is to weight citations by the <strong>independence</strong> of the citing agent rather than by their PageRank. Two validators are not independent if they share funding, institutional affiliation, or editorial board membership. Define the funder/affiliate graph <span class="math inline">\(\mathcal{F} = (\mathcal{V}, \mathcal{E}_F)\)</span> where an edge <span class="math inline">\((u, v) \in \mathcal{E}_F\)</span> exists if entities <span class="math inline">\(u\)</span> and <span class="math inline">\(v\)</span> share a funding source or institutional parent. Apply community detection (e.g., Louvain algorithm) to <span class="math inline">\(\mathcal{F}\)</span> to partition validators into clusters <span class="math inline">\(\{C_1, \ldots, C_m\}\)</span>.</p>
+<p>Each validator <span class="math inline">\(v \in \mathcal{W}(X)\)</span> carries a weight <span class="math inline">\(w_v \in (0,1]\)</span> representing its accumulated epistemic reputation — initialised from a domain authority prior (e.g., normalised Moz DA score) and updated over time by the reputation staking mechanism in Section 6.5, so that validators with a history of attesting falsified claims carry lower <span class="math inline">\(w_v\)</span>. The independence score of a claim <span class="math inline">\(X\)</span> endorsed by validator set <span class="math inline">\(\mathcal{W}(X)\)</span> is then:</p>
+<p><span class="math display">\[\text{Independence}(X) = 1 - \frac{\max_j \sum_{v \in \mathcal{W}(X) \cap C_j} w_v}{\sum_{v \in \mathcal{W}(X)} w_v}\]</span></p>
+<p>The numerator captures the total weight controlled by the single most dominant cluster <span class="math inline">\(C_j\)</span>; the denominator is the total endorsement weight. This ratio equals 1 when a single cluster owns all endorsement weight (minimum independence) and 0 when weight is spread uniformly across clusters (maximum independence). The score therefore equals 1 when endorsers are maximally diverse and approaches 0 when a single institutional cluster dominates — directly penalising the IFCN-style coordinated endorsement pattern. The authority injection lower bound from Section 2.1 is replaced by:</p>
+<p><span class="math display">\[\text{TrustScore}_{\text{layer1}}(X) \geq \text{Independence}(X) \cdot \sum_{j=1}^{k} \frac{w_j}{L(v_j) + 1}\]</span></p>
+<p>which approaches zero as the endorsing coalition becomes a single cluster, even if individual validator weights <span class="math inline">\(w_j\)</span> are high.</p>
+</section>
+<section id="layer-2-topology-independent-content-quality-scoring" class="level3" data-number="1.6.3">
+<h3 data-number="1.6.3" class="anchored" data-anchor-id="layer-2-topology-independent-content-quality-scoring"><span class="header-section-number">1.6.3</span> 6.3 Layer 2 — Topology-Independent Content Quality Scoring</h3>
+<p>The second layer scores <strong>content</strong>, independent of who links to it. We define a composite quality function:</p>
+<p><span class="math display">\[Q(p) = \alpha_1 \cdot V(p) + \alpha_2 \cdot \Gamma(p) + \alpha_3 \cdot \Pi(p) + \alpha_4 \cdot R(p)\]</span></p>
+<p><strong>Verifiability</strong> <span class="math inline">\(V(p) \in [0,1]\)</span>: the fraction of factual claims in <span class="math inline">\(p\)</span> cross-referenceable against structured external databases (PubMed, Cochrane Reviews, FRED, pre-registration registries):</p>
+<p><span class="math display">\[V(p) = \frac{|\{k_i \in \mathcal{K}(p) : \exists\, e \in \mathcal{E}_{\text{ext}},\ \text{entails}(e, k_i)\}|}{|\mathcal{K}(p)|}\]</span></p>
+<p><strong>Logical Consistency</strong> <span class="math inline">\(\Gamma(p) \in [0,1]\)</span>: absence of internal contradiction, via NLI:</p>
+<p><span class="math display">\[\Gamma(p) = 1 - \frac{|\{(k_i, k_j) \in \mathcal{K}(p)^2 : \text{contradicts}(k_i, k_j)\}|}{|\mathcal{K}(p)|^2}\]</span></p>
+<p><strong>Predictive Accuracy (Brier Score)</strong> <span class="math inline">\(\Pi(p) \in [0,1]\)</span>: for documents making falsifiable predictions, the historical calibration score:</p>
+<p><span class="math display">\[\Pi(p) = 1 - \frac{1}{|\mathcal{P}(p)|} \sum_{i=1}^{|\mathcal{P}(p)|} (f_i - o_i)^2\]</span></p>
+<p>where <span class="math inline">\(f_i\)</span> is the stated probability of prediction <span class="math inline">\(i\)</span> and <span class="math inline">\(o_i \in \{0,1\}\)</span> is the observed outcome. This is the <em>Brier score for content</em> — skin-in-the-game quality measurement.</p>
+<p><strong>Reproducibility</strong> <span class="math inline">\(R(p) \in [0,1]\)</span>: a weighted score for data/code availability, pre-registration, and independent replication.</p>
+<p>Critically, <strong>none of these components are topological</strong> and thus none can be gamed by acquiring backlinks.</p>
+</section>
+<section id="layer-3-epistemic-diversity-preservation" class="level3" data-number="1.6.4">
+<h3 data-number="1.6.4" class="anchored" data-anchor-id="layer-3-epistemic-diversity-preservation"><span class="header-section-number">1.6.4</span> 6.4 Layer 3 — Epistemic Diversity Preservation</h3>
+<p>Any ranking system that converges too quickly on consensus kills the marginal truth it is designed to surface. We introduce an explicit <strong>epistemic diversity bonus</strong>:</p>
+<p><span class="math display">\[\text{FinalScore}(p) = Q(p) \cdot \left(1 + \lambda \cdot \text{Novelty}(p)\right)\]</span></p>
+<p>where <span class="math inline">\(\text{Novelty}(p)\)</span> measures semantic distance from the current consensus cluster:</p>
+<p><span class="math display">\[\text{Novelty}(p) = \frac{1}{K} \sum_{k=1}^{K} \left(1 - \text{sim}\left(\mathbf{e}_p,\ \mathbf{e}_{p_k^*}\right)\right)\]</span></p>
+<p>with <span class="math inline">\(\{p_1^*, \ldots, p_K^*\}\)</span> being the current top-<span class="math inline">\(K\)</span> ranked documents. A high-quality heterodox document receives a bonus <span class="math inline">\(\lambda \cdot \text{Novelty}(p) &gt; 0\)</span>, reversing PageRank’s structural penalty against dissenting views.</p>
+</section>
+<section id="the-reputation-staking-mechanism" class="level3" data-number="1.6.5">
+<h3 data-number="1.6.5" class="anchored" data-anchor-id="the-reputation-staking-mechanism"><span class="header-section-number">1.6.5</span> 6.5 The Reputation Staking Mechanism</h3>
+<p>The BFT analogy is completed by a <strong>Proof of Epistemic Work</strong> consensus layer. Validators stake reputation tokens <span class="math inline">\(\rho_v\)</span> to attest claims, with slashing conditions on falsification:</p>
+<p><span class="math display">\[\rho_v^{(t+1)} = \begin{cases} \rho_v^{(t)} \cdot (1 + r_{\text{reward}}) &amp; \text{if } \tau(X) \geq \tau_{\min} \text{ verified at } t+\Delta \\ \rho_v^{(t)} \cdot (1 - r_{\text{slash}}) &amp; \text{if } \tau(X) &lt; \tau_{\min} \text{ verified at } t+\Delta \end{cases}\]</span></p>
+<p>This creates an economic incentive aligned with truth. Unlike PageRank — where the cost of a link is purely the opportunity cost of outbound link equity — staking imposes a direct cost on false endorsement. The Byzantine fault tolerance guarantee follows: with <span class="math inline">\(n\)</span> validators and at most <span class="math inline">\(f\)</span> coordinated Byzantine validators, TrustScore converges to the correct value provided <span class="math inline">\(f &lt; n/3\)</span>.</p>
+</section>
+<section id="goodharts-law-why-the-brier-score-is-the-adversarial-anchor" class="level3" data-number="1.6.6">
+<h3 data-number="1.6.6" class="anchored" data-anchor-id="goodharts-law-why-the-brier-score-is-the-adversarial-anchor"><span class="header-section-number">1.6.6</span> 6.6 Goodhart’s Law: Why the Brier Score is the Adversarial Anchor</h3>
+<p>Any quality signal that becomes a public ranking target will be gamed — Goodhart’s Law applied to epistemology. If NLI consistency scoring <span class="math inline">\(\Gamma(p)\)</span> is known to be a ranking factor, adversaries will optimise documents to pass NLI checks while remaining misleading. If verifiability <span class="math inline">\(V(p)\)</span> is the target, adversaries will write around the structured databases. These concerns are real and motivate a partially hidden ensemble.</p>
+<p>But the <strong>Brier score component <span class="math inline">\(\Pi(p)\)</span> is categorically different and is the architecture’s adversarial anchor</strong>. To game a Brier score, an author must assign well-calibrated probabilities to future observable events and then those events must actually occur as predicted. There is no syntactic or topological manipulation path to a good Brier score — you cannot write your way to calibrated predictions. You can only earn them by being epistemically accurate over time. This is the property that makes <span class="math inline">\(\Pi(p)\)</span> robust where <span class="math inline">\(\Gamma(p)\)</span> and <span class="math inline">\(V(p)\)</span> are not: it demands demonstrated predictive competence across a temporal horizon, not just internal consistency at a single point in time.</p>
+<p>The practical implication is weighting: in environments under active adversarial pressure, <span class="math inline">\(\alpha_3\)</span> (the Brier weight) should be increased relative to <span class="math inline">\(\alpha_1\)</span> and <span class="math inline">\(\alpha_2\)</span>, trading off coverage (fewer documents have sufficient prediction history) against manipulation resistance. This tradeoff is explicit, tunable, and — crucially — does not exist in PageRank at all.</p>
+<p>The remaining vulnerability is the bootstrapping of <span class="math inline">\(\Pi(p)\)</span> for recent documents. The <strong>provisional tier</strong> addresses this: recent claims are scored on <span class="math inline">\(V\)</span>, <span class="math inline">\(\Gamma\)</span>, <span class="math inline">\(R\)</span> only, with uncertainty bounds displayed to the user and a flag indicating that Brier calibration is pending. Provisional scores are explicitly marked as awaiting temporal validation — the epistemically correct posture.</p>
+</section>
+<section id="the-bootstrapping-problem-and-adversarial-audit-governance" class="level3" data-number="1.6.7">
+<h3 data-number="1.6.7" class="anchored" data-anchor-id="the-bootstrapping-problem-and-adversarial-audit-governance"><span class="header-section-number">1.6.7</span> 6.7 The Bootstrapping Problem and Adversarial Audit Governance</h3>
+<p>The seed corpus for <span class="math inline">\(\mathcal{E}_{\text{ext}}\)</span> must be chosen without circularity. We propose seeding exclusively from pre-registered clinical and scientific trials, independently replicated empirical results, and primary government statistical databases stripped of interpretive text. These have objective falsifiability criteria that do not depend on institutional authority — a trial either met its pre-specified endpoints or it did not.</p>
+<p>This does not fully escape the regress: someone must maintain the pre-registration registries and decide which replication standards qualify. Rather than accepting this as an unavoidable axiom, we propose a concrete governance structure modelled on <strong>adversarial auditing with rotating challenger committees</strong>. The seed corpus is maintained by an independent foundation (structured analogously to the Internet Archive or ICANN, with multi-stakeholder governance and no single controlling funder) whose registry decisions are subject to annual adversarial challenge: any party may petition to add or remove a source, and petitions are adjudicated by a rotating panel of domain experts drawn from a pool that explicitly excludes current funders of registered sources. Approved challenges trigger re-scoring of all documents whose <span class="math inline">\(\mathcal{E}_{\text{ext}}\)</span> citations trace to the contested source, propagating corrections forward automatically. Critically, all registry decisions, challenge histories, and adjudicator conflict-of-interest disclosures are published in an append-only public ledger — making the axiom not just minimal and explicit, but <em>auditable and contestable over time</em>. This converts the bootstrapping problem from an epistemological dead-end into an ongoing adversarial process whose integrity is maintained by the same skin-in-the-game mechanism as the Brier score: participants who systematically advocate for low-quality sources lose credibility in future adjudications.</p>
+<hr>
+</section>
+</section>
+<section id="discussion-implementation-pathway-and-institutional-resistance" class="level2" data-number="1.7">
+<h2 data-number="1.7" class="anchored" data-anchor-id="discussion-implementation-pathway-and-institutional-resistance"><span class="header-section-number">1.7</span> 7. Discussion: Implementation Pathway and Institutional Resistance</h2>
+<section id="a-tractable-near-term-version" class="level3" data-number="1.7.1">
+<h3 data-number="1.7.1" class="anchored" data-anchor-id="a-tractable-near-term-version"><span class="header-section-number">1.7.1</span> 7.1 A Tractable Near-Term Version</h3>
+<p>The full BFT TruthChain is a long-term research programme. A tractable near-term implementation targets scientific and empirical claims specifically: Semantic Scholar + PubMed + pre-registered trials + Cochrane Reviews → embedded with <span class="math inline">\(Q(p)\)</span> scores → RAG retrieval weighted by <span class="math inline">\(Q(p)\)</span> rather than <span class="math inline">\(PR(p)\)</span>. This is buildable today using existing NLP infrastructure and represents a parallel index rather than a replacement for general web search.</p>
+</section>
+<section id="why-incumbents-will-not-build-this" class="level3" data-number="1.7.2">
+<h3 data-number="1.7.2" class="anchored" data-anchor-id="why-incumbents-will-not-build-this"><span class="header-section-number">1.7.2</span> 7.2 Why Incumbents Will Not Build This</h3>
+<p>The PageRank-plus-institutional-amplifier architecture is not merely a technical flaw — it reflects a stable alignment between commercial interests (Google’s advertiser relationships depend on the current authority hierarchy), institutional interests (governments and NGOs seek information control), and platform incentives (liability reduction through moderation). This alignment is self-reinforcing. The COVID-19 pandemic illustrated the failure mode vividly: pages contradicting WHO guidance were de-ranked irrespective of evidential basis, because the institutional link topology overwhelmingly endorsed the consensus position and the BFT guarantee was violated — the fraction of coordinated institutional validators vastly exceeded <span class="math inline">\(n/3\)</span>. No incumbent with a profitable stake in the current hierarchy will build a system designed to surface heterodox high-quality claims.</p>
+<p>A partial counterpoint exists: the EU Digital Markets Act (DMA), enforced from March 2024, has demonstrably shifted some SERP composition by requiring Google to present third-party comparison services and reduce self-preferencing of Google-owned properties. SparkToro’s 2024 data shows the EU open-web click share (374 per 1,000 searches) marginally exceeds the US figure (360 per 1,000), a gap attributed by analysts specifically to DMA-mandated diversification. This is encouraging evidence that external structural pressure can move the topology — but the DMA addresses <em>commercial</em> self-preferencing, not <em>epistemic</em> self-preferencing. It compels Google to show a rival price-comparison site; it says nothing about the ranking of heterodox scientific claims. Regulatory intervention is a necessary but not sufficient condition. The BFT TruthChain must emerge from outside: academic infrastructure, open-source communities, or adversarial startups with no legacy ad inventory to protect.</p>
+<hr>
+</section>
+</section>
+<section id="conclusion" class="level2" data-number="1.8">
+<h2 data-number="1.8" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">1.8</span> 8. Conclusion</h2>
+<p>We have demonstrated that PageRank is mathematically equivalent to eigenvector centrality in a human-constructed link graph with no forcing mechanism toward truth, proven collusion-susceptibility for <span class="math inline">\(O(\log N)\)</span> coalitions, corrected the overstated .gov TLD claim to its accurate and sufficient form (structural link-density advantage rather than algorithmic preference), and shown that RAG pipelines inherit the same bias through corpus contamination. The proposed BFT TruthChain addresses these failures across three layers: independence-weighted citation scoring that penalises institutional clustering; topology-independent content quality scoring with the Brier calibration score as the manipulation-resistant temporal anchor; and an epistemic diversity bonus reversing PageRank’s structural penalty against heterodox claims. The empirical disruption is already underway — Table 1 documents position-1 CTR collapse from 7.6% to 1.6% for informational queries under AI Overviews, zero-click rates reaching 65% by mid-2025, and paid CTR dropping 68% in AIO-present SERPs. The question is no longer whether the link-graph era ends, but whether the architecture that replaces it will be epistemically honest.</p>
+<hr>
+</section>
+<section id="references" class="level2" data-number="1.9">
+<h2 data-number="1.9" class="anchored" data-anchor-id="references"><span class="header-section-number">1.9</span> References</h2>
+<ol type="1">
+<li><p>Page, L., Brin, S., Motwani, R., &amp; Winograd, T. (1999). <em>The PageRank Citation Ranking: Bringing Order to the Web</em>. Stanford InfoLab Technical Report.</p></li>
+<li><p>Langville, A. N., &amp; Meyer, C. D. (2006). <em>Google’s PageRank and Beyond: The Science of Search Engine Rankings</em>. Princeton University Press.</p></li>
+<li><p>Perron, O. (1907). Zur Theorie der Matrices. <em>Mathematische Annalen</em>, 64(2), 248–263.</p></li>
+<li><p>Lamport, L., Pease, M., &amp; Shostak, R. (1982). Byzantine Generals Problem. <em>ACM Transactions on Programming Languages and Systems</em>, 4(3), 382–401.</p></li>
+<li><p>Blondel, V. D., et al.&nbsp;(2008). Fast unfolding of communities in large networks. <em>Journal of Statistical Mechanics</em>, 2008(10), P10008.</p></li>
+<li><p>Brier, G. W. (1950). Verification of forecasts expressed in terms of probability. <em>Monthly Weather Review</em>, 78(1), 1–3.</p></li>
+<li><p>SparkToro / Datos (2024). <em>2024 Zero-Click Search Study: For every 1,000 US Google Searches, only 374 clicks go to the Open Web.</em> sparktoro.com/blog.</p></li>
+<li><p>Ahrefs (2025). <em>CTR Impact of AI Overviews: December 2023 vs.&nbsp;December 2025 Google Search Console comparison.</em> ahrefs.com/blog.</p></li>
+<li><p>Pew Research Center (2025). <em>AI Overviews and Search Click Behaviour: Controlled Analysis of 68,879 Queries.</em> March 2025.</p></li>
+<li><p>Seer Interactive (2025). <em>AI Overviews CTR Impact: Analysis of 25.1 Million Organic Impressions Across 42 Organisations.</em> seerinteractive.com.</p></li>
+<li><p>Semrush (2025). <em>AI Overviews Study: What 2025 SEO Data Tells Us About Google’s Search Shift.</em> semrush.com/blog.</p></li>
+<li><p>BrightEdge (2023). <em>Organic Click Decline Report: Knowledge Graph and AI Summarisation Impact.</em></p></li>
+<li><p>Mueller, J. (2020). Tweet on .gov and .edu ranking signals. Google Search Central. [Google does not provide TLD-based ranking preference.]</p></li>
+<li><p>Lewis, P., et al.&nbsp;(2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. <em>NeurIPS 2020</em>.</p></li>
+<li><p>Nakano, R., et al.&nbsp;(2021). WebGPT: Browser-assisted question-answering with human feedback. <em>arXiv:2112.09332</em>.</p></li>
+<li><p>Goodhart, C. A. E. (1975). Problems of Monetary Management: The U.K. Experience. <em>Papers in Monetary Economics</em>, Reserve Bank of Australia.</p></li>
+<li><p>Brin, S., &amp; Page, L. (1998). The anatomy of a large-scale hypertextual Web search engine. <em>Computer Networks and ISDN Systems</em>, 30(1–7), 107–117.</p></li>
+<li><p>Metzler, D., et al.&nbsp;(2021). Rethinking Search: Making Domain Experts out of Dilettantes. <em>ACM SIGIR Forum</em>, 55(1).</p></li>
+</ol>
+<hr>
+<p><em>Working paper — not peer reviewed.</em></p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/dbose\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

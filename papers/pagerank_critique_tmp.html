@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>pagerank_critique.qmd</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="pagerank-as-a-popularity-contest-structural-vulnerabilities-collusion-dynamics-and-a-byzantine-fault-tolerant-alternative">PageRank as a Popularity Contest: Structural Vulnerabilities, Collusion Dynamics, and a Byzantine Fault-Tolerant Alternative</h1>
+<p><strong>D. Bose</strong> | Sydney, NSW, Australia
+<em>February 2026</em>, v3.0</p>
+<hr>
+<blockquote>
+<p><strong>Abstract</strong> — We propose the <strong>BFT TruthChain</strong>: a collusion-resistant information retrieval architecture combining Byzantine Fault-Tolerant consensus theory, topology-independent content quality scoring anchored by Brier calibration, and an epistemic diversity bonus for high-quality heterodox content. The motivation is a formal critique of PageRank as a popularity contest: we prove that a coalition of $O(\log N)$ high-authority domains can arbitrarily elevate any target page regardless of content, that .gov/.org domains enjoy a structurally equivalent authority premium through accumulated link density, and that standard RAG pipelines inherit this bias through corpus contamination ($P(d \in \mathcal{D}) \propto PR(d)^\eta$). Empirically, position-1 CTR under AI Overviews has collapsed from 7.6% to 1.6% (Ahrefs, 2025) and zero-click rates reached 65% by mid-2025 — confirming that the link-graph era is ending. The question is what replaces it.</p>
+</blockquote>
+<hr>
+<h2 id="1-the-pagerank-formalism-elegance-and-hidden-assumptions">1. The PageRank Formalism: Elegance and Hidden Assumptions</h2>
+<h3 id="11-the-stationary-distribution-interpretation">1.1 The Stationary Distribution Interpretation</h3>
+<p>The classic PageRank score for a page $p$ is defined as:</p>
+<p>$$PR(p) = \frac{1-d}{N} + d \sum_{i \in \mathcal{B}(p)} \frac{PR(i)}{L(i)}$$</p>
+<p>where $d \approx 0.85$ is the damping factor, $N$ is the total number of pages, $\mathcal{B}(p)$ is the set of pages linking to $p$, and $L(i)$ is the out-degree of page $i$. This is equivalent to the stationary distribution $\boldsymbol{\pi}$ of a modified random-walk Markov chain with transition matrix:</p>
+<p>$$\mathbf{M} = d\mathbf{A}^T \mathbf{D}^{-1} + \frac{(1-d)}{N}\mathbf{1}\mathbf{1}^T$$</p>
+<p>where $\mathbf{A}$ is the adjacency matrix of the web graph and $\mathbf{D} = \text{diag}(L(1), \ldots, L(N))$. By the Perron–Frobenius theorem, since $\mathbf{M}$ is a positive stochastic matrix, a unique stationary distribution $\boldsymbol{\pi}$ satisfying $\mathbf{M}\boldsymbol{\pi} = \boldsymbol{\pi}$ exists. Power iteration converges geometrically at rate $|\lambda_2/\lambda_1|$ where $\lambda_1 = 1$ and $|\lambda_2| \leq d$.</p>
+<p>The beautiful mathematics conceals a profound <em>epistemological assumption</em>: that the long-run visit frequency of a random web surfer is a proxy for <strong>informational quality</strong>. This is the original sin of PageRank — popularity is conflated with truth.</p>
+<h3 id="12-what-pagerank-actually-measures">1.2 What PageRank Actually Measures</h3>
+<p>Let $\mathcal{G} = (\mathcal{V}, \mathcal{E})$ be the web graph. The PageRank vector $\boldsymbol{\pi}$ measures the <em>eigenvector centrality</em> of nodes in a teleporting random walk. It is a property of the <strong>graph topology alone</strong> — not of the content at each node. Formally:</p>
+<p>$$\boldsymbol{\pi} = \lim_{k \to \infty} \mathbf{M}^k \boldsymbol{\pi}_0, \quad \forall, \boldsymbol{\pi}_0 \in \Delta^{N-1}$$</p>
+<p>The content of page $p$ enters the ranking only indirectly, through the linking decisions of other human agents whose motivations are social, commercial, institutional, and political — not epistemically calibrated. PageRank therefore measures <strong>inter-subjective consensus</strong> within the link graph, not objective informational quality.</p>
+<hr>
+<h2 id="2-the-collusion-problem-a-mathematical-proof">2. The Collusion Problem: A Mathematical Proof</h2>
+<h3 id="21-authority-injection-via-coalition">2.1 Authority Injection via Coalition</h3>
+<p><strong>Proposition.</strong> <em>Let $S = {v_1, \ldots, v_k}$ be a coalition of pages with PageRank scores ${PR(v_j)}$ and let $t$ be a target page with $PR(t) \approx 0$. If every $v_j \in S$ adds an outgoing link to $t$, the new PageRank of $t$ satisfies:</em></p>
+<p>$$PR'(t) \geq \frac{d}{N} \sum_{j=1}^{k} \frac{PR(v_j)}{L(v_j) + 1}$$</p>
+<p><strong>Proof sketch.</strong> After link injection, the transition matrix $\mathbf{M}$ gains non-zero entries $M_{t, v_j} = d / (L(v_j)+1)$ for each $j$. In the updated stationary distribution, the contribution to $\pi_t$ from $S$ alone is $d \sum_{j} \pi_{v_j}/(L(v_j)+1)$. Adding the teleportation floor $(1-d)/N &gt; 0$ yields the lower bound. $\square$</p>
+<p><strong>Corollary.</strong> If $S$ consists of high-authority domains with $PR(v_j) \gg 1/N$, even a small coalition $|S| = O(\log N)$ can elevate $PR'(t)$ to the top decile of the distribution, regardless of the informational content of $t$.</p>
+<h3 id="22-the-de-facto-institutional-authority-premium">2.2 The De Facto Institutional Authority Premium</h3>
+<p>A common misconception in the SEO industry is that Google applies an explicit TLD-level bonus to .gov and .edu domains. Google's John Mueller has stated directly that TLD does not factor into ranking preference, and that many .edu links are actively discounted due to spam. This claim, as typically stated, is incorrect and we retract the hardcoded $\alpha_{\text{tld}}$ formulation from earlier versions of this paper.</p>
+<p>However, the weaker and more defensible version of the argument is fully sufficient. Government and major institutional domains accumulate inbound link density organically and at scale: the FDA (DA 86), NASA (DA 93), and California state government (DA 97) attract high-PageRank inbound links continuously without active link-building, simply because they are the authoritative primary sources for their subject matter. Formally, let $\bar{D}(v)$ denote the mean inbound link PageRank for domain $v$. Then for institutional domains $v_{\text{inst}}$:</p>
+<p>$$\mathbb{E}[\bar{D}(v_{\text{inst}})] \gg \mathbb{E}[\bar{D}(v_{\text{com}})]$$</p>
+<p>This produces a <em>structurally equivalent outcome</em> to a hardcoded TLD premium: claims published by institutional domains, and claims endorsed by IFCN-affiliated .org fact-checkers linking to those domains, sit at the eigenvector centre of the web graph by construction of how the web was built, not by algorithmic fiat. The closed epistemic loop operates identically in either case — it is just that the lock-in is sociological rather than algorithmic.</p>
+<h3 id="23-the-eigenvector-of-power-not-truth">2.3 The Eigenvector of Power, Not Truth</h3>
+<p>Define the truth score of page $p$ as $\tau(p) \in [0,1]$, representing factual accuracy, and let $\boldsymbol{\tau} = (\tau(p))<em>{p \in \mathcal{V}} \in [0,1]^N$ be the truth vector over all $N$ pages. The stationary PageRank distribution $\boldsymbol{\pi} = (\pi(p))</em>{p \in \mathcal{V}} \in \Delta^{N-1}$ is similarly a vector over pages. We define the <strong>cross-sectional correlation</strong> between rank and truth across the full page population as:</p>
+<p>$$\text{Corr}(\boldsymbol{\pi}, \boldsymbol{\tau}) = \frac{\displaystyle\sum_{p \in \mathcal{V}} \bigl(\pi(p) - \bar{\pi}\bigr)\bigl(\tau(p) - \bar{\tau}\bigr)}{\sqrt{\displaystyle\sum_{p \in \mathcal{V}}\bigl(\pi(p)-\bar{\pi}\bigr)^2} \cdot \sqrt{\displaystyle\sum_{p \in \mathcal{V}}\bigl(\tau(p)-\bar{\tau}\bigr)^2}}$$</p>
+<p>where $\bar{\pi} = \frac{1}{N}\sum_{p} \pi(p) = \frac{1}{N}$ and $\bar{\tau} = \frac{1}{N}\sum_{p} \tau(p)$.</p>
+<p>There is no mechanism in the PageRank formalism that forces $\text{Corr}(\boldsymbol{\pi}, \boldsymbol{\tau}) &gt; 0$. The transition matrix $\mathbf{M}$ is a function of the adjacency matrix $\mathbf{A}$ alone, and $\mathbf{A}$ is determined entirely by the linking behaviour of web authors — shaped by social proof, financial incentives, institutional mandates, and network effects — none of which are calibrated to $\boldsymbol{\tau}$. Since $\boldsymbol{\pi}$ is the leading eigenvector of $\mathbf{M}$, and $\mathbf{M}$ contains no information about $\boldsymbol{\tau}$, the cross-sectional correlation is structurally unconstrained. In adversarial environments where high-PR actors systematically misrepresent $\tau$, it can become <em>negative</em>.</p>
+<hr>
+<h2 id="3-the-closed-epistemic-loop">3. The Closed Epistemic Loop</h2>
+<h3 id="31-institutional-gatekeeping-architecture">3.1 Institutional Gatekeeping Architecture</h3>
+<p>The modern web truth-ranking stack operates as a self-reinforcing three-layer system. At layer 1, primary nodes are government agencies and institutional bodies that accumulate high PageRank through natural link density (see Section 2.2). At layer 2, IFCN-affiliated fact-checkers — organisations whose funding relationships include the Gates Foundation, Open Society Foundations, and others — link to and amplify layer 1 claims, further concentrating link authority. At layer 3, platform policies on YouTube and Facebook enforce &quot;community guidelines&quot; that suppress pages contradicting layer 1 and 2 content, reducing their effective out-degree in the crawlable graph. The result is a <strong>closed loop</strong>: the link graph structurally encodes a specific epistemic orthodoxy. Any heterodox page faces a near-insurmountable eigenvector disadvantage — not because Google engineered this outcome, but because the sociology of institutional link-building produced it.</p>
+<h3 id="32-the-seo-industry-as-revealed-preference">3.2 The SEO Industry as Revealed Preference</h3>
+<p>The existence of a multi-billion dollar SEO and link-building industry is the most compelling empirical proof that PageRank does not measure truth. If PageRank were correlated with content quality, optimising it would require improving content. Instead, the dominant SEO strategy is <strong>topology manipulation</strong>. The market price of a backlink from a DA-90+ domain (circa 2024: $500–$5,000) represents the market's estimate of $\partial PR(t)/\partial \text{link}_{v \to t}$ — the marginal authority injection value of a single edge in the graph. Truth has no such price signal.</p>
+<hr>
+<h2 id="4-llms-as-retrieval-systems-promise-and-inherited-bias">4. LLMs as Retrieval Systems: Promise and Inherited Bias</h2>
+<h3 id="41-the-parametric-knowledge-advantage">4.1 The Parametric Knowledge Advantage</h3>
+<p>A large language model with parameters $\boldsymbol{\theta} \in \mathbb{R}^d$ (e.g., $d \sim 7 \times 10^{11}$ for GPT-4 class models) encodes a compressed, lossy representation of a training corpus $\mathcal{D}$:</p>
+<p>$$\boldsymbol{\theta}^* = \arg\min_{\boldsymbol{\theta}} \sum_{x \in \mathcal{D}} \mathcal{L}(x; \boldsymbol{\theta})$$</p>
+<p>where $\mathcal{L}$ is the next-token prediction loss. Critically, the training objective encourages <em>internal consistency</em> across documents. A factual contradiction present in $\mathcal{D}$ creates a higher loss signal than a consistent claim, exerting gradient pressure toward coherent representations — a mechanism entirely absent from PageRank.</p>
+<h3 id="42-retrieval-augmented-generation-as-graph-free-ranking">4.2 Retrieval-Augmented Generation as Graph-Free Ranking</h3>
+<p>In RAG architectures, a query $q$ retrieves a context set $\mathcal{C}(q) \subset \mathcal{D}$ via dense retrieval:</p>
+<p>$$\mathcal{C}(q) = \text{TopK}_k\left{ d \in \mathcal{D} : \text{sim}(\mathbf{e}_q, \mathbf{e}_d) \right}, \quad \mathbf{e}<em>x = f</em>{\boldsymbol{\phi}}(x) \in \mathbb{R}^m$$</p>
+<p>The retrieval score is a function of <strong>semantic content</strong>, not link topology. A scientific preprint with zero inbound links but high semantic relevance outscores a heavily linked but off-topic domain. The LLM's generative step then performs <em>implicit multi-document reasoning</em>, synthesising retrieved context to identify contradictions and qualify uncertainty.</p>
+<h3 id="43-the-corpus-contamination-problem">4.3 The Corpus Contamination Problem</h3>
+<p>However, RAG pipelines are not epistemically clean by default. Training corpora (Common Crawl, C4, The Pile) are dominated by high-PageRank content — because web crawlers weight coverage by link density. The probability that a document $d$ appears in the training corpus is approximately:</p>
+<p>$$P(d \in \mathcal{D}) \propto PR(d)^\eta, \quad \eta &gt; 0$$</p>
+<p>This means the LLM's parametric knowledge inherits PageRank's inter-subjective bias through a different channel. The bias is <em>laundered</em> — it no longer looks like a link graph, but the underlying causal structure is the same. This corpus contamination problem motivates the architecture in Section 6.</p>
+<hr>
+<h2 id="5-the-economic-disruption-llms-vs-google-serp">5. The Economic Disruption: LLMs vs. Google SERP</h2>
+<h3 id="51-click-erosion-by-query-type">5.1 Click Erosion by Query Type</h3>
+<p>The structural impact of LLMs and AI Overviews on SERP engagement is now empirically well-documented, with effects that vary sharply by query intent. Table 1 synthesises the key data points across sources.</p>
+<hr>
+<p><strong>Table 1: CTR and Zero-Click Rates by Query Type and Era (US Desktop + Mobile)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Query Type</th>
+<th>Zero-Click Rate 2022</th>
+<th>Zero-Click Rate 2024</th>
+<th>Zero-Click Rate 2025</th>
+<th>Pos-1 CTR (pre-AIO)</th>
+<th>Pos-1 CTR (with AIO)</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Informational</td>
+<td>~45%</td>
+<td>~65%</td>
+<td>~83%</td>
+<td>7.6%</td>
+<td>1.6%</td>
+<td>Ahrefs 2025; BrightEdge 2023</td>
+</tr>
+<tr>
+<td>Navigational</td>
+<td>~20%</td>
+<td>~35%</td>
+<td>~40%</td>
+<td>15–20%</td>
+<td>8–10%</td>
+<td>Pew Research 2025; SparkToro 2024</td>
+</tr>
+<tr>
+<td>Commercial</td>
+<td>~15%</td>
+<td>~25%</td>
+<td>~32%</td>
+<td>10–14%</td>
+<td>4–6%</td>
+<td>Seer Interactive 2025 (25.1M impressions)</td>
+</tr>
+<tr>
+<td>Transactional</td>
+<td>~10%</td>
+<td>~18%</td>
+<td>~22%</td>
+<td>18–22%</td>
+<td>8–12%</td>
+<td>Semrush AIO Study, Oct 2025</td>
+</tr>
+<tr>
+<td><strong>All queries (blended)</strong></td>
+<td><strong>~26%</strong></td>
+<td><strong>~58.5%</strong></td>
+<td><strong>~65%</strong></td>
+<td>—</td>
+<td>—</td>
+<td>SparkToro/Datos 2024; Onely 2025</td>
+</tr>
+</tbody>
+</table>
+<p><em>Notes: AIO = AI Overviews. Pew Research (March 2025, n = 68,879 real queries) found CTR of 8% with AI summaries vs. 15% without — a 47% relative reduction. Seer Interactive (42 organisations, 25.1M impressions) found paid CTR dropped 68% (19.7% → 6.34%) when AIO appeared. Position-1 CTR collapse for informational queries (7.6% → 1.6%) from Ahrefs comparing December 2023 vs. December 2025. Zero-click rate for queries triggering AI Overviews specifically reached 83% (WordStream/BrightEdge 2024).</em></p>
+<hr>
+<p>The table reveals the asymmetry clearly: informational queries — precisely those where epistemically contested content lives — have been most devastated. Transactional queries, which drive Google's advertising revenue, have been more resilient but are now also under AIO pressure as Semrush data shows commercial intent queries growing from 8.7% to 42.9% of AIO appearances between January and October 2025.</p>
+<h3 id="52-a-simple-model-of-click-displacement">5.2 A Simple Model of Click Displacement</h3>
+<p>Let $\beta_t \in [0,1]$ be the LLM/AIO query capture rate at time $t$. Google's effective paid-click inventory satisfies:</p>
+<p>$$Q_t = Q_0 \cdot (1 - \beta_t) \cdot \text{CTR}_{\text{paid}}(\mathbf{k})$$</p>
+<p>With logistic adoption dynamics:</p>
+<p>$$\beta_t = \frac{\beta_{\max}}{1 + e^{-r(t - t_0)}}$$</p>
+<p>Setting $\beta_{\max} = 0.45$, $r = 0.8\ \text{yr}^{-1}$, $t_0 = 2024.5$, and anchoring to the observed paid CTR collapse of 68% for AIO-present queries (Seer Interactive), the model implies $Q_t$ declining ~35% from 2024 to 2027 for informational and research query categories. The self-cannibalisation paradox is worth noting: Google's AI Overviews are simultaneously defending search market share and destroying the paid-click monetisation model that finances the entire infrastructure.</p>
+<hr>
+<h2 id="6-towards-a-bft-truthchain-a-collusion-resistant-architecture">6. Towards a BFT TruthChain: A Collusion-Resistant Architecture</h2>
+<h3 id="61-the-byzantine-analogy">6.1 The Byzantine Analogy</h3>
+<p>PageRank has no Byzantine Fault Tolerance. Lamport, Pease and Shostak (1982) showed that a distributed system of $n$ validators can tolerate up to $f &lt; n/3$ Byzantine (malicious or faulty) nodes while preserving consensus integrity. The web's truth consensus offers no equivalent guarantee — a coordinated minority of high-PR nodes can corrupt the global ranking indefinitely, with no slashing mechanism and no quorum requirement.</p>
+<p>We propose a three-layer architecture — the <strong>BFT TruthChain</strong> — that addresses this structural gap.</p>
+<h3 id="62-layer-1--independence-weighted-citation-graph">6.2 Layer 1 — Independence-Weighted Citation Graph</h3>
+<p>The first departure from PageRank is to weight citations by the <strong>independence</strong> of the citing agent rather than by their PageRank. Two validators are not independent if they share funding, institutional affiliation, or editorial board membership. Define the funder/affiliate graph $\mathcal{F} = (\mathcal{V}, \mathcal{E}_F)$ where an edge $(u, v) \in \mathcal{E}_F$ exists if entities $u$ and $v$ share a funding source or institutional parent. Apply community detection (e.g., Louvain algorithm) to $\mathcal{F}$ to partition validators into clusters ${C_1, \ldots, C_m}$.</p>
+<p>Each validator $v \in \mathcal{W}(X)$ carries a weight $w_v \in (0,1]$ representing its accumulated epistemic reputation — initialised from a domain authority prior (e.g., normalised Moz DA score) and updated over time by the reputation staking mechanism in Section 6.5, so that validators with a history of attesting falsified claims carry lower $w_v$. The independence score of a claim $X$ endorsed by validator set $\mathcal{W}(X)$ is then:</p>
+<p>$$\text{Independence}(X) = 1 - \frac{\max_j \sum_{v \in \mathcal{W}(X) \cap C_j} w_v}{\sum_{v \in \mathcal{W}(X)} w_v}$$</p>
+<p>The numerator captures the total weight controlled by the single most dominant cluster $C_j$; the denominator is the total endorsement weight. This ratio equals 1 when a single cluster owns all endorsement weight (minimum independence) and 0 when weight is spread uniformly across clusters (maximum independence). The score therefore equals 1 when endorsers are maximally diverse and approaches 0 when a single institutional cluster dominates — directly penalising the IFCN-style coordinated endorsement pattern. The authority injection lower bound from Section 2.1 is replaced by:</p>
+<p>$$\text{TrustScore}<em>{\text{layer1}}(X) \geq \text{Independence}(X) \cdot \sum</em>{j=1}^{k} \frac{w_j}{L(v_j) + 1}$$</p>
+<p>which approaches zero as the endorsing coalition becomes a single cluster, even if individual validator weights $w_j$ are high.</p>
+<h3 id="63-layer-2--topology-independent-content-quality-scoring">6.3 Layer 2 — Topology-Independent Content Quality Scoring</h3>
+<p>The second layer scores <strong>content</strong>, independent of who links to it. We define a composite quality function:</p>
+<p>$$Q(p) = \alpha_1 \cdot V(p) + \alpha_2 \cdot \Gamma(p) + \alpha_3 \cdot \Pi(p) + \alpha_4 \cdot R(p)$$</p>
+<p><strong>Verifiability</strong> $V(p) \in [0,1]$: the fraction of factual claims in $p$ cross-referenceable against structured external databases (PubMed, Cochrane Reviews, FRED, pre-registration registries):</p>
+<p>$$V(p) = \frac{|{k_i \in \mathcal{K}(p) : \exists, e \in \mathcal{E}_{\text{ext}},\ \text{entails}(e, k_i)}|}{|\mathcal{K}(p)|}$$</p>
+<p><strong>Logical Consistency</strong> $\Gamma(p) \in [0,1]$: absence of internal contradiction, via NLI:</p>
+<p>$$\Gamma(p) = 1 - \frac{|{(k_i, k_j) \in \mathcal{K}(p)^2 : \text{contradicts}(k_i, k_j)}|}{|\mathcal{K}(p)|^2}$$</p>
+<p><strong>Predictive Accuracy (Brier Score)</strong> $\Pi(p) \in [0,1]$: for documents making falsifiable predictions, the historical calibration score:</p>
+<p>$$\Pi(p) = 1 - \frac{1}{|\mathcal{P}(p)|} \sum_{i=1}^{|\mathcal{P}(p)|} (f_i - o_i)^2$$</p>
+<p>where $f_i$ is the stated probability of prediction $i$ and $o_i \in {0,1}$ is the observed outcome. This is the <em>Brier score for content</em> — skin-in-the-game quality measurement.</p>
+<p><strong>Reproducibility</strong> $R(p) \in [0,1]$: a weighted score for data/code availability, pre-registration, and independent replication.</p>
+<p>Critically, <strong>none of these components are topological</strong> and thus none can be gamed by acquiring backlinks.</p>
+<h3 id="64-layer-3--epistemic-diversity-preservation">6.4 Layer 3 — Epistemic Diversity Preservation</h3>
+<p>Any ranking system that converges too quickly on consensus kills the marginal truth it is designed to surface. We introduce an explicit <strong>epistemic diversity bonus</strong>:</p>
+<p>$$\text{FinalScore}(p) = Q(p) \cdot \left(1 + \lambda \cdot \text{Novelty}(p)\right)$$</p>
+<p>where $\text{Novelty}(p)$ measures semantic distance from the current consensus cluster:</p>
+<p>$$\text{Novelty}(p) = \frac{1}{K} \sum_{k=1}^{K} \left(1 - \text{sim}\left(\mathbf{e}<em>p,\ \mathbf{e}</em>{p_k^*}\right)\right)$$</p>
+<p>with ${p_1^<em>, \ldots, p_K^</em>}$ being the current top-$K$ ranked documents. A high-quality heterodox document receives a bonus $\lambda \cdot \text{Novelty}(p) &gt; 0$, reversing PageRank's structural penalty against dissenting views.</p>
+<h3 id="65-the-reputation-staking-mechanism">6.5 The Reputation Staking Mechanism</h3>
+<p>The BFT analogy is completed by a <strong>Proof of Epistemic Work</strong> consensus layer. Validators stake reputation tokens $\rho_v$ to attest claims, with slashing conditions on falsification:</p>
+<p>$$\rho_v^{(t+1)} = \begin{cases} \rho_v^{(t)} \cdot (1 + r_{\text{reward}}) &amp; \text{if } \tau(X) \geq \tau_{\min} \text{ verified at } t+\Delta \ \rho_v^{(t)} \cdot (1 - r_{\text{slash}}) &amp; \text{if } \tau(X) &lt; \tau_{\min} \text{ verified at } t+\Delta \end{cases}$$</p>
+<p>This creates an economic incentive aligned with truth. Unlike PageRank — where the cost of a link is purely the opportunity cost of outbound link equity — staking imposes a direct cost on false endorsement. The Byzantine fault tolerance guarantee follows: with $n$ validators and at most $f$ coordinated Byzantine validators, TrustScore converges to the correct value provided $f &lt; n/3$.</p>
+<h3 id="66-goodharts-law-why-the-brier-score-is-the-adversarial-anchor">6.6 Goodhart's Law: Why the Brier Score is the Adversarial Anchor</h3>
+<p>Any quality signal that becomes a public ranking target will be gamed — Goodhart's Law applied to epistemology. If NLI consistency scoring $\Gamma(p)$ is known to be a ranking factor, adversaries will optimise documents to pass NLI checks while remaining misleading. If verifiability $V(p)$ is the target, adversaries will write around the structured databases. These concerns are real and motivate a partially hidden ensemble.</p>
+<p>But the <strong>Brier score component $\Pi(p)$ is categorically different and is the architecture's adversarial anchor</strong>. To game a Brier score, an author must assign well-calibrated probabilities to future observable events and then those events must actually occur as predicted. There is no syntactic or topological manipulation path to a good Brier score — you cannot write your way to calibrated predictions. You can only earn them by being epistemically accurate over time. This is the property that makes $\Pi(p)$ robust where $\Gamma(p)$ and $V(p)$ are not: it demands demonstrated predictive competence across a temporal horizon, not just internal consistency at a single point in time.</p>
+<p>The practical implication is weighting: in environments under active adversarial pressure, $\alpha_3$ (the Brier weight) should be increased relative to $\alpha_1$ and $\alpha_2$, trading off coverage (fewer documents have sufficient prediction history) against manipulation resistance. This tradeoff is explicit, tunable, and — crucially — does not exist in PageRank at all.</p>
+<p>The remaining vulnerability is the bootstrapping of $\Pi(p)$ for recent documents. The <strong>provisional tier</strong> addresses this: recent claims are scored on $V$, $\Gamma$, $R$ only, with uncertainty bounds displayed to the user and a flag indicating that Brier calibration is pending. Provisional scores are explicitly marked as awaiting temporal validation — the epistemically correct posture.</p>
+<h3 id="67-the-bootstrapping-problem-and-adversarial-audit-governance">6.7 The Bootstrapping Problem and Adversarial Audit Governance</h3>
+<p>The seed corpus for $\mathcal{E}_{\text{ext}}$ must be chosen without circularity. We propose seeding exclusively from pre-registered clinical and scientific trials, independently replicated empirical results, and primary government statistical databases stripped of interpretive text. These have objective falsifiability criteria that do not depend on institutional authority — a trial either met its pre-specified endpoints or it did not.</p>
+<p>This does not fully escape the regress: someone must maintain the pre-registration registries and decide which replication standards qualify. Rather than accepting this as an unavoidable axiom, we propose a concrete governance structure modelled on <strong>adversarial auditing with rotating challenger committees</strong>. The seed corpus is maintained by an independent foundation (structured analogously to the Internet Archive or ICANN, with multi-stakeholder governance and no single controlling funder) whose registry decisions are subject to annual adversarial challenge: any party may petition to add or remove a source, and petitions are adjudicated by a rotating panel of domain experts drawn from a pool that explicitly excludes current funders of registered sources. Approved challenges trigger re-scoring of all documents whose $\mathcal{E}_{\text{ext}}$ citations trace to the contested source, propagating corrections forward automatically. Critically, all registry decisions, challenge histories, and adjudicator conflict-of-interest disclosures are published in an append-only public ledger — making the axiom not just minimal and explicit, but <em>auditable and contestable over time</em>. This converts the bootstrapping problem from an epistemological dead-end into an ongoing adversarial process whose integrity is maintained by the same skin-in-the-game mechanism as the Brier score: participants who systematically advocate for low-quality sources lose credibility in future adjudications.</p>
+<hr>
+<h2 id="7-discussion-implementation-pathway-and-institutional-resistance">7. Discussion: Implementation Pathway and Institutional Resistance</h2>
+<h3 id="71-a-tractable-near-term-version">7.1 A Tractable Near-Term Version</h3>
+<p>The full BFT TruthChain is a long-term research programme. A tractable near-term implementation targets scientific and empirical claims specifically: Semantic Scholar + PubMed + pre-registered trials + Cochrane Reviews → embedded with $Q(p)$ scores → RAG retrieval weighted by $Q(p)$ rather than $PR(p)$. This is buildable today using existing NLP infrastructure and represents a parallel index rather than a replacement for general web search.</p>
+<h3 id="72-why-incumbents-will-not-build-this">7.2 Why Incumbents Will Not Build This</h3>
+<p>The PageRank-plus-institutional-amplifier architecture is not merely a technical flaw — it reflects a stable alignment between commercial interests (Google's advertiser relationships depend on the current authority hierarchy), institutional interests (governments and NGOs seek information control), and platform incentives (liability reduction through moderation). This alignment is self-reinforcing. The COVID-19 pandemic illustrated the failure mode vividly: pages contradicting WHO guidance were de-ranked irrespective of evidential basis, because the institutional link topology overwhelmingly endorsed the consensus position and the BFT guarantee was violated — the fraction of coordinated institutional validators vastly exceeded $n/3$. No incumbent with a profitable stake in the current hierarchy will build a system designed to surface heterodox high-quality claims.</p>
+<p>A partial counterpoint exists: the EU Digital Markets Act (DMA), enforced from March 2024, has demonstrably shifted some SERP composition by requiring Google to present third-party comparison services and reduce self-preferencing of Google-owned properties. SparkToro's 2024 data shows the EU open-web click share (374 per 1,000 searches) marginally exceeds the US figure (360 per 1,000), a gap attributed by analysts specifically to DMA-mandated diversification. This is encouraging evidence that external structural pressure can move the topology — but the DMA addresses <em>commercial</em> self-preferencing, not <em>epistemic</em> self-preferencing. It compels Google to show a rival price-comparison site; it says nothing about the ranking of heterodox scientific claims. Regulatory intervention is a necessary but not sufficient condition. The BFT TruthChain must emerge from outside: academic infrastructure, open-source communities, or adversarial startups with no legacy ad inventory to protect.</p>
+<hr>
+<h2 id="8-conclusion">8. Conclusion</h2>
+<p>We have demonstrated that PageRank is mathematically equivalent to eigenvector centrality in a human-constructed link graph with no forcing mechanism toward truth, proven collusion-susceptibility for $O(\log N)$ coalitions, corrected the overstated .gov TLD claim to its accurate and sufficient form (structural link-density advantage rather than algorithmic preference), and shown that RAG pipelines inherit the same bias through corpus contamination. The proposed BFT TruthChain addresses these failures across three layers: independence-weighted citation scoring that penalises institutional clustering; topology-independent content quality scoring with the Brier calibration score as the manipulation-resistant temporal anchor; and an epistemic diversity bonus reversing PageRank's structural penalty against heterodox claims. The empirical disruption is already underway — Table 1 documents position-1 CTR collapse from 7.6% to 1.6% for informational queries under AI Overviews, zero-click rates reaching 65% by mid-2025, and paid CTR dropping 68% in AIO-present SERPs. The question is no longer whether the link-graph era ends, but whether the architecture that replaces it will be epistemically honest.</p>
+<hr>
+<h2 id="references">References</h2>
+<ol>
+<li>
+<p>Page, L., Brin, S., Motwani, R., &amp; Winograd, T. (1999). <em>The PageRank Citation Ranking: Bringing Order to the Web</em>. Stanford InfoLab Technical Report.</p>
+</li>
+<li>
+<p>Langville, A. N., &amp; Meyer, C. D. (2006). <em>Google's PageRank and Beyond: The Science of Search Engine Rankings</em>. Princeton University Press.</p>
+</li>
+<li>
+<p>Perron, O. (1907). Zur Theorie der Matrices. <em>Mathematische Annalen</em>, 64(2), 248–263.</p>
+</li>
+<li>
+<p>Lamport, L., Pease, M., &amp; Shostak, R. (1982). Byzantine Generals Problem. <em>ACM Transactions on Programming Languages and Systems</em>, 4(3), 382–401.</p>
+</li>
+<li>
+<p>Blondel, V. D., et al. (2008). Fast unfolding of communities in large networks. <em>Journal of Statistical Mechanics</em>, 2008(10), P10008.</p>
+</li>
+<li>
+<p>Brier, G. W. (1950). Verification of forecasts expressed in terms of probability. <em>Monthly Weather Review</em>, 78(1), 1–3.</p>
+</li>
+<li>
+<p>SparkToro / Datos (2024). <em>2024 Zero-Click Search Study: For every 1,000 US Google Searches, only 374 clicks go to the Open Web.</em> sparktoro.com/blog.</p>
+</li>
+<li>
+<p>Ahrefs (2025). <em>CTR Impact of AI Overviews: December 2023 vs. December 2025 Google Search Console comparison.</em> ahrefs.com/blog.</p>
+</li>
+<li>
+<p>Pew Research Center (2025). <em>AI Overviews and Search Click Behaviour: Controlled Analysis of 68,879 Queries.</em> March 2025.</p>
+</li>
+<li>
+<p>Seer Interactive (2025). <em>AI Overviews CTR Impact: Analysis of 25.1 Million Organic Impressions Across 42 Organisations.</em> seerinteractive.com.</p>
+</li>
+<li>
+<p>Semrush (2025). <em>AI Overviews Study: What 2025 SEO Data Tells Us About Google's Search Shift.</em> semrush.com/blog.</p>
+</li>
+<li>
+<p>BrightEdge (2023). <em>Organic Click Decline Report: Knowledge Graph and AI Summarisation Impact.</em></p>
+</li>
+<li>
+<p>Mueller, J. (2020). Tweet on .gov and .edu ranking signals. Google Search Central. [Google does not provide TLD-based ranking preference.]</p>
+</li>
+<li>
+<p>Lewis, P., et al. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. <em>NeurIPS 2020</em>.</p>
+</li>
+<li>
+<p>Nakano, R., et al. (2021). WebGPT: Browser-assisted question-answering with human feedback. <em>arXiv:2112.09332</em>.</p>
+</li>
+<li>
+<p>Goodhart, C. A. E. (1975). Problems of Monetary Management: The U.K. Experience. <em>Papers in Monetary Economics</em>, Reserve Bank of Australia.</p>
+</li>
+<li>
+<p>Brin, S., &amp; Page, L. (1998). The anatomy of a large-scale hypertextual Web search engine. <em>Computer Networks and ISDN Systems</em>, 30(1–7), 107–117.</p>
+</li>
+<li>
+<p>Metzler, D., et al. (2021). Rethinking Search: Making Domain Experts out of Dilettantes. <em>ACM SIGIR Forum</em>, 55(1).</p>
+</li>
+</ol>
+<hr>
+<p><em>Working paper — not peer reviewed.</em></p>
+
+</body>
+</html>
