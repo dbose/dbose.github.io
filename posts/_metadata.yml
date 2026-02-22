@@ -1,7 +1,0 @@
-listing:
-  contents: .
-  sort: "date desc"
-  type: default
-  fields: [date, title, description]
-page-layout: article
-toc: true
