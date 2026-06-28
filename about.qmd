@@ -53,6 +53,4 @@ If you're looking for polished marketing material, this isn't it. If you're look
 ---
 
 **Connect**  
-[GitHub](https://github.com/dbose) • [LinkedIn](https://www.linkedin.com/in/your-profile/)
-
-**Location:** Sydney, Australia
+[GitHub](https://github.com/dbose)
