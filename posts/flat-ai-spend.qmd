@@ -18,6 +18,11 @@ Token usage on engineering teams tends to follow a fairly predictable curve. It 
 
 This article walks through the three levers that actually move the needle: intelligent routing, a proper cache architecture, and a semantic layer that stops models from burning tokens on brute-force schema discovery. Everything below is written for teams running DBT, SQL, and Airflow, because that is where I have seen these patterns pay off fastest.
 
+<blockquote class="twitter-tweet">
+  <a href="https://twitter.com/brian_armstrong/status/2070670644577280109"></a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
 ## The Cost Accounting Problem: Measuring What You Cannot See
 
 Before you optimise anything, you need to actually see the problem. Most teams are flying blind here. They know the monthly bill but they cannot decompose it by model, by task type, or by cache behaviour, which means every "optimisation" is really just a guess.
