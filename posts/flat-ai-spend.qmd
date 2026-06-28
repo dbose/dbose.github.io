@@ -1,0 +1,752 @@
+---
+title: "Keeping AI Spend Flat While Token Usage Grows Exponentially"
+description: "A practical guide to routing, caching, and semantic context for DBT/SQL/Airflow teams. Covers a local routing classifier, prefix-cache-friendly prompt construction, and treating the DBT semantic layer as a retrieval index instead of a document to paste, with instrumentation that lets Power BI track cost per token rather than absolute spend."
+date: 2026-06-28
+categories: [AIOps, MLOps, LLMs, AI, Cost Optimisation, DBT, Airflow, Data Engineering, ]
+author:
+  - name: D. Bose
+    location: Sydney, NSW, Australia
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    code-fold: false
+---
+
+Token usage on engineering teams tends to follow a fairly predictable curve. It is slow at first, while people are still poking at the tools and not quite trusting them, and then it goes nearly vertical the moment developers decide the output is worth keeping. The usual instinct is to fight that with caps and alerts. I think the better instinct is to build infrastructure that makes the growth cheap, so you never have to ration in the first place.
+
+This article walks through the three levers that actually move the needle: intelligent routing, a proper cache architecture, and a semantic layer that stops models from burning tokens on brute-force schema discovery. Everything below is written for teams running DBT, SQL, and Airflow, because that is where I have seen these patterns pay off fastest.
+
+<blockquote class="twitter-tweet">
+  <a href="https://twitter.com/brian_armstrong/status/2070670644577280109"></a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+## The Cost Accounting Problem: Measuring What You Cannot See
+
+Before you optimise anything, you need to actually see the problem. Most teams are flying blind here. They know the monthly bill but they cannot decompose it by model, by task type, or by cache behaviour, which means every "optimisation" is really just a guess.
+
+The first step is an instrumentation layer that captures per-request token economics and writes it somewhere your BI tooling can read. For Power BI, that means a SQL table with the right grain.
+
+```python
+# llm_gateway/instrumentation.py
+import time
+import hashlib
+import json
+from dataclasses import dataclass, asdict
+from typing import Optional
+import psycopg2
+
+
+@dataclass
+class LLMRequestRecord:
+    request_id: str
+    timestamp: str
+    model_id: str
+    model_tier: str          # "frontier" | "mid" | "open_weight"
+    task_type: str           # "planning" | "execution" | "review" | "sql_gen"
+    prompt_tokens: int
+    completion_tokens: int
+    cache_hit: bool
+    cache_tokens_saved: int
+    prompt_hash: str         # for deduplication analysis
+    cost_usd: float
+    latency_ms: int
+    engineer_id: str
+
+
+# Per-million-token pricing (update as models change)
+MODEL_PRICING = {
+    "gpt-4o":             {"input": 2.50,  "output": 10.00, "cached_input": 1.25},
+    "claude-sonnet-4-5":  {"input": 3.00,  "output": 15.00, "cached_input": 0.30},
+    "glm-5.2":            {"input": 0.14,  "output": 0.14,  "cached_input": 0.07},
+    "kimi-2.7":           {"input": 0.14,  "output": 0.14,  "cached_input": 0.07},
+    "qwen2.5-72b":        {"input": 0.40,  "output": 0.40,  "cached_input": 0.10},
+}
+
+
+def compute_cost(model_id: str, prompt_tokens: int, completion_tokens: int,
+                 cache_tokens_saved: int) -> float:
+    pricing = MODEL_PRICING.get(model_id, {"input": 1.0, "output": 4.0, "cached_input": 0.5})
+    # Cached tokens are charged at the reduced rate
+    live_prompt_tokens = prompt_tokens - cache_tokens_saved
+    cost = (
+        (live_prompt_tokens / 1_000_000)    * pricing["input"]
+      + (cache_tokens_saved / 1_000_000)    * pricing["cached_input"]
+      + (completion_tokens / 1_000_000)     * pricing["output"]
+    )
+    return round(cost, 6)
+
+
+def log_request(record: LLMRequestRecord, conn):
+    with conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO llm_usage (
+                request_id, timestamp, model_id, model_tier, task_type,
+                prompt_tokens, completion_tokens, cache_hit, cache_tokens_saved,
+                prompt_hash, cost_usd, latency_ms, engineer_id
+            ) VALUES (
+                %(request_id)s, %(timestamp)s, %(model_id)s, %(model_tier)s,
+                %(task_type)s, %(prompt_tokens)s, %(completion_tokens)s,
+                %(cache_hit)s, %(cache_tokens_saved)s, %(prompt_hash)s,
+                %(cost_usd)s, %(latency_ms)s, %(engineer_id)s
+            )
+        """, asdict(record))
+    conn.commit()
+```
+
+Once that table is populated, the Power BI dashboard query is fairly straightforward:
+
+```sql
+-- powerbi/llm_spend_dashboard.sql
+-- Plug this into Power BI as a DirectQuery or scheduled import
+WITH daily_spend AS (
+    SELECT
+        DATE_TRUNC('day', timestamp)           AS spend_date,
+        model_tier,
+        task_type,
+        COUNT(*)                               AS request_count,
+        SUM(prompt_tokens + completion_tokens) AS total_tokens,
+        SUM(cache_tokens_saved)                AS tokens_saved_by_cache,
+        AVG(cache_hit::int)                    AS cache_hit_rate,
+        SUM(cost_usd)                          AS cost_usd,
+        -- What the cost would have been with no caching and no routing
+        SUM(
+            (prompt_tokens + completion_tokens) / 1_000_000.0 * 3.0
+        )                                      AS cost_usd_unoptimised
+    FROM llm_usage
+    WHERE timestamp >= CURRENT_DATE - INTERVAL '90 days'
+    GROUP BY 1, 2, 3
+),
+with_savings AS (
+    SELECT
+        *,
+        cost_usd_unoptimised - cost_usd       AS savings_usd,
+        -- Rolling 7-day cost trend for the "flat spend" chart
+        AVG(cost_usd) OVER (
+            ORDER BY spend_date
+            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+        )                                      AS cost_7d_rolling_avg
+    FROM daily_spend
+)
+SELECT * FROM with_savings
+ORDER BY spend_date DESC;
+```
+
+The metric to pin at the top of the dashboard is **cost per token**, not absolute spend. If token usage doubles but cost per token halves, you are winning. That is the signal that routing and caching are actually doing their job.
+
+## Part 1: Intelligent Routing, and Getting Preprocessing Right
+
+There is a claim worth unpacking here: that AI can automate model selection. It is true, but the implementation detail matters enormously. The naive approach, where you ask a frontier model which model to use, costs more than just sending the request to the frontier model in the first place. You have paid the expensive call to decide whether to make the expensive call.
+
+The correct approach is a lightweight local classifier that runs in under 20ms before any API call is made.
+
+### Choosing Your Routing Model
+
+For preprocessing you want something that runs locally with no API latency, is small enough to be effectively free, and understands prompt semantics well enough to classify task complexity. Two reasonable options for teams already on Python:
+
+| Model | Size | Latency | Best For |
+|---|---|---|---|
+| `sentence-transformers/all-MiniLM-L6-v2` | 80MB | ~5ms | Semantic similarity routing |
+| `microsoft/phi-3-mini` (4-bit) | 2.2GB | ~80ms | Full text classification |
+| `distilbert-base-uncased-finetuned` (custom) | 260MB | ~15ms | Your task taxonomy |
+
+For most teams the right starting point is MiniLM embeddings with a small trained classifier on top. You label 500 to 1000 historical prompts by hand once, train a logistic regression or an XGBoost classifier, and ship it as a sidecar.
+
+```python
+# router/classifier.py
+from sentence_transformers import SentenceTransformer
+import numpy as np
+import joblib
+from enum import Enum
+
+
+class TaskComplexity(Enum):
+    SIMPLE    = "simple"      # -> open_weight default (GLM, Kimi)
+    MODERATE  = "moderate"    # -> mid-tier (Haiku, GPT-4o-mini)
+    COMPLEX   = "complex"     # -> frontier (Sonnet, GPT-4o)
+    PLANNING  = "planning"    # -> frontier, always; needs reasoning depth
+
+
+class PromptRouter:
+    def __init__(self, model_path="all-MiniLM-L6-v2", classifier_path="router/classifier.pkl"):
+        self.encoder   = SentenceTransformer(model_path)
+        self.clf       = joblib.load(classifier_path)
+
+        # Signals that force frontier regardless of classifier output
+        self.frontier_keywords = {
+            "architect", "design a system", "trade-off", "evaluate options",
+            "security implications", "migration strategy", "refactor entire"
+        }
+        # Signals that are safe for open-weight
+        self.simple_patterns = {
+            "rename", "add comment", "fix typo", "format", "docstring",
+            "translate", "summarise this", "what does this function do"
+        }
+
+    def classify(self, prompt: str, context_token_count: int = 0) -> dict:
+        prompt_lower = prompt.lower()
+
+        # Fast path: keyword overrides before model inference
+        if any(kw in prompt_lower for kw in self.frontier_keywords):
+            return self._route("complex", reason="keyword:frontier_override")
+        if any(kw in prompt_lower for kw in self.simple_patterns):
+            return self._route("simple", reason="keyword:simple_override")
+
+        # Embedding-based classification
+        embedding = self.encoder.encode([prompt])
+        complexity = self.clf.predict(embedding)[0]
+        confidence = self.clf.predict_proba(embedding).max()
+
+        # Low confidence -> promote to next tier (conservative)
+        if confidence < 0.70 and complexity == "simple":
+            complexity = "moderate"
+
+        # Large contexts are not safe on small models (context window limits)
+        if context_token_count > 12_000 and complexity == "simple":
+            complexity = "moderate"
+
+        return self._route(complexity, reason=f"classifier:{confidence:.2f}")
+
+    def _route(self, complexity: str, reason: str) -> dict:
+        model_map = {
+            "simple":   {"model": "glm-5.2",          "tier": "open_weight"},
+            "moderate": {"model": "qwen2.5-72b",       "tier": "mid"},
+            "complex":  {"model": "claude-sonnet-4-5", "tier": "frontier"},
+            "planning": {"model": "claude-sonnet-4-5", "tier": "frontier"},
+        }
+        route = model_map[complexity]
+        return {**route, "complexity": complexity, "routing_reason": reason}
+```
+
+### Training the Classifier
+
+You need labelled data. The fastest path is to export your last 30 days of LLM requests, strip them down to just the prompt, and label a stratified sample.
+
+```python
+# router/train_classifier.py
+import pandas as pd
+from sentence_transformers import SentenceTransformer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+import joblib
+
+
+def train(labelled_csv: str, output_path: str = "router/classifier.pkl"):
+    df = pd.read_csv(labelled_csv)  # columns: prompt, complexity_label
+
+    encoder = SentenceTransformer("all-MiniLM-L6-v2")
+    X = encoder.encode(df["prompt"].tolist(), show_progress_bar=True)
+    y = df["complexity_label"]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
+
+    clf = LogisticRegression(max_iter=1000, C=1.0, class_weight="balanced")
+    clf.fit(X_train, y_train)
+
+    print(classification_report(y_test, clf.predict(X_test)))
+    joblib.dump(clf, output_path)
+    print(f"Saved classifier to {output_path}")
+
+
+if __name__ == "__main__":
+    train("data/labelled_prompts.csv")
+```
+
+Aim for above 85% accuracy before you deploy. The failure mode you actually care about is the false simples, where a genuinely complex task gets routed to an open-weight model that produces garbage. False complexes (a simple task sent to a frontier model) cost you a bit of money but they do not break anything, so weight your tuning accordingly.
+
+## Part 2: Cache Architecture, or the 5% to 60% Jump
+
+You will sometimes see a cache hit rate quoted as going from 5% to 60%. That gap is not mysterious. It is just the difference between bolting caching on as an afterthought and designing your requests to be cache-friendly from the start.
+
+### Why Naive Caching Fails
+
+The most common mistake is hashing the entire prompt, dynamic context and all. A prompt that includes `as of 2025-06-28`, or a randomly ordered list of table names, will never match its cache entry from yesterday even when 95% of the content is identical. One stray timestamp and the whole thing misses.
+
+Cache-friendly design means separating the stable system context from the dynamic user content, and caching them at different TTLs.
+
+```python
+# cache/cache_manager.py
+import hashlib
+import json
+import redis
+from typing import Optional, Tuple
+
+
+class CacheManager:
+    def __init__(self, redis_url: str = "redis://localhost:6379"):
+        self.redis = redis.from_url(redis_url, decode_responses=True)
+        # TTL strategy by content type
+        self.ttl_config = {
+            "system_prompt":      86400 * 7,   # 7 days, changes rarely
+            "schema_context":     86400 * 1,   # 1 day, DBT models change infrequently
+            "few_shot_examples":  86400 * 3,   # 3 days
+            "full_request":       3600 * 4,    # 4 hours, complete cache entry
+        }
+
+    def _stable_hash(self, content: str) -> str:
+        """Deterministic hash; strips whitespace normalisation differences."""
+        normalised = " ".join(content.split())
+        return hashlib.sha256(normalised.encode()).hexdigest()[:16]
+
+    def build_cache_key(self, system_prompt: str, user_message: str,
+                        model_id: str, schema_context: str = "") -> str:
+        """
+        Key is a composite of stable components only.
+        Deliberately excludes: timestamps, session IDs, random seeds.
+        """
+        system_hash = self._stable_hash(system_prompt)
+        schema_hash  = self._stable_hash(schema_context) if schema_context else "no_schema"
+        user_hash    = self._stable_hash(user_message)
+        return f"llm:{model_id}:{system_hash}:{schema_hash}:{user_hash}"
+
+    def get(self, key: str) -> Tuple[Optional[str], bool]:
+        value = self.redis.get(key)
+        if value:
+            return json.loads(value), True
+        return None, False
+
+    def set(self, key: str, response: dict, content_type: str = "full_request"):
+        ttl = self.ttl_config.get(content_type, 3600)
+        self.redis.setex(key, ttl, json.dumps(response))
+
+    def get_stats(self) -> dict:
+        """For the Power BI instrumentation table."""
+        info = self.redis.info("stats")
+        hits   = int(info.get("keyspace_hits",   0))
+        misses = int(info.get("keyspace_misses", 0))
+        total  = hits + misses
+        return {
+            "hit_rate":    round(hits / total, 4) if total else 0,
+            "hits":        hits,
+            "misses":      misses,
+            "total":       total,
+        }
+```
+
+### Prefix Caching: The Real Lever
+
+Modern APIs from Anthropic and OpenAI support prompt prefix caching, where if the first N tokens of your request are identical to a recent request, you are charged at roughly 10% of the normal input rate for those tokens. This is where most of the 60% number actually comes from. It is not exact-match response caching, it is structuring prompts so the expensive static prefix is reused on almost every call.
+
+The rule is simple: stable content first, dynamic content last.
+
+```python
+# cache/prompt_builder.py
+class CacheOptimisedPromptBuilder:
+    """
+    Constructs prompts in the order that maximises prefix cache hits.
+
+    Order: system context -> schema -> few-shots -> current task
+
+    Never put timestamps, user names, or session state early in the prompt.
+    """
+    def __init__(self, schema_registry):
+        self.schema_registry = schema_registry
+
+    def build(self, task: str, tables_needed: list[str]) -> dict:
+        # 1. SYSTEM PROMPT, maximally stable, never changes per-request
+        system = self._get_system_prompt()
+
+        # 2. SCHEMA CONTEXT, stable within a day; retrieved from the semantic layer
+        #    (see Part 3 for how we avoid dumping the whole schema here)
+        schema_block = self.schema_registry.get_relevant_schema(tables_needed)
+
+        # 3. FEW-SHOT EXAMPLES, curated and stable across sessions
+        examples = self._get_few_shots(task_type=self._classify_task(task))
+
+        # 4. DYNAMIC CONTENT LAST, this is the only part that varies
+        user_message = f"""
+{schema_block}
+
+{examples}
+
+Task: {task}
+"""
+        return {
+            "system":       system,
+            "user_message": user_message,
+            # The prefix up to the end of the examples is cache-eligible
+            "cacheable_prefix_length": len(system) + len(schema_block) + len(examples),
+        }
+
+    def _get_system_prompt(self) -> str:
+        # Load from file, not hardcoded inline, so it is easy to version
+        with open("prompts/system_base.txt") as f:
+            return f.read()
+
+    def _get_few_shots(self, task_type: str) -> str:
+        with open(f"prompts/few_shots/{task_type}.txt") as f:
+            return f.read()
+
+    def _classify_task(self, task: str) -> str:
+        # Lightweight local classification, same idea as the router
+        keywords = {"sql": "sql_gen", "test": "testing", "document": "docs"}
+        task_lower = task.lower()
+        for kw, label in keywords.items():
+            if kw in task_lower:
+                return label
+        return "general"
+```
+
+### Warming the Cache With Airflow
+
+A warm cache is far more useful than a cold one. For a DBT and Airflow shop you can pre-warm it by firing common prompt patterns as part of your daily DAG runs, before anyone sits down to work.
+
+```python
+# airflow/dags/llm_cache_warmup_dag.py
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+import requests
+
+
+COMMON_SCHEMA_QUERIES = [
+    "Show me the lineage of the fct_trades model",
+    "What columns are available in dim_counterparty?",
+    "Which models feed into the risk_exposure mart?",
+]
+
+
+def warm_cache_for_query(query: str):
+    """
+    Fires a real LLM request through the gateway.
+    The response is cached; engineers get cache hits all day.
+    """
+    response = requests.post(
+        "http://llm-gateway:8080/v1/chat",
+        json={
+            "messages": [{"role": "user", "content": query}],
+            "task_type": "schema_lookup",
+            "cache_ttl_override": 86400,   # Cache for 24h
+        },
+        headers={"X-Source": "cache-warmup"},
+        timeout=30,
+    )
+    response.raise_for_status()
+
+
+with DAG(
+    "llm_cache_warmup",
+    schedule_interval="0 7 * * 1-5",   # 7 AM weekdays, before engineers arrive
+    start_date=datetime(2025, 1, 1),
+    catchup=False,
+    default_args={"retries": 1, "retry_delay": timedelta(minutes=5)},
+) as dag:
+    for i, query in enumerate(COMMON_SCHEMA_QUERIES):
+        PythonOperator(
+            task_id=f"warm_query_{i}",
+            python_callable=warm_cache_for_query,
+            op_kwargs={"query": query},
+        )
+```
+
+## Part 3: The Semantic Layer as Token Budget
+
+This is the part that most articles on LLM cost optimisation skip entirely, and it is also the one most relevant to DBT shops.
+
+The naive approach to giving a model access to your warehouse is to dump the full `schema.yml` into context. For a mature DBT project that can be 50,000 to 200,000 tokens per request. At \$3 per million tokens that is somewhere between \$0.15 and \$0.60 in input cost before you have even asked the question. Multiply by 500 engineer-requests a day and it stops being a rounding error.
+
+The fix is to treat your DBT semantic layer as a retrieval index, not a document to paste.
+
+### Exposing DBT Metadata as a Searchable Registry
+
+DBT already generates machine-readable metadata in `manifest.json` and `catalog.json`. Those are your source of truth for a schema registry that returns only the tables a given request actually needs.
+
+```python
+# semantic/dbt_schema_registry.py
+import json
+from pathlib import Path
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+
+class DBTSchemaRegistry:
+    """
+    Builds a semantic index from the DBT manifest + catalog.
+    At query time it retrieves only the relevant models, not the full schema.
+    """
+    def __init__(self, manifest_path: str, catalog_path: str):
+        with open(manifest_path) as f:
+            self.manifest = json.load(f)
+        with open(catalog_path) as f:
+            self.catalog = json.load(f)
+
+        self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
+        self._build_index()
+
+    def _build_index(self):
+        """
+        Index each DBT model by name + description + column names + tags.
+        This is the searchable surface area.
+        """
+        self.models = []
+        for node_id, node in self.manifest["nodes"].items():
+            if node["resource_type"] != "model":
+                continue
+
+            # Pull column info from the catalog
+            catalog_node = self.catalog["nodes"].get(node_id, {})
+            columns = catalog_node.get("columns", {})
+            col_names = list(columns.keys())
+
+            description = node.get("description", "")
+            tags        = node.get("tags", [])
+            meta        = node.get("meta", {})
+
+            # Build a rich text representation for semantic search
+            searchable_text = " ".join([
+                node["name"],
+                description,
+                " ".join(col_names),
+                " ".join(tags),
+                meta.get("domain", ""),
+                meta.get("owner", ""),
+            ])
+
+            self.models.append({
+                "node_id":        node_id,
+                "name":           node["name"],
+                "description":    description,
+                "columns":        {c: columns[c].get("comment", "") for c in col_names},
+                "tags":           tags,
+                "searchable":     searchable_text,
+                "depends_on":     node.get("depends_on", {}).get("nodes", []),
+            })
+
+        # Pre-compute embeddings for all models once
+        texts = [m["searchable"] for m in self.models]
+        self.embeddings = self.encoder.encode(texts, show_progress_bar=False)
+        print(f"Schema registry built: {len(self.models)} models indexed")
+
+    def get_relevant_schema(self, query: str, top_k: int = 5,
+                            explicit_tables: list[str] = None) -> str:
+        """
+        Returns a compact schema block for only the relevant models.
+        Stays under ~2,000 tokens even for complex queries.
+        """
+        # Explicit table names take priority
+        if explicit_tables:
+            matches = [m for m in self.models if m["name"] in explicit_tables]
+        else:
+            query_embedding = self.encoder.encode([query])
+            scores = np.dot(self.embeddings, query_embedding.T).flatten()
+            top_indices = scores.argsort()[-top_k:][::-1]
+            matches = [self.models[i] for i in top_indices]
+
+        return self._format_schema_block(matches)
+
+    def _format_schema_block(self, models: list) -> str:
+        """
+        Compact YAML-ish format that is more token-efficient than the full schema.yml
+        """
+        lines = ["## Available Tables\n"]
+        for m in models:
+            lines.append(f"### {m['name']}")
+            if m["description"]:
+                lines.append(f"_{m['description']}_")
+            lines.append("Columns:")
+            for col, desc in list(m["columns"].items())[:20]:  # cap at 20 columns
+                col_line = f"  - {col}"
+                if desc:
+                    col_line += f": {desc}"
+                lines.append(col_line)
+            if m["tags"]:
+                lines.append(f"Tags: {', '.join(m['tags'])}")
+            lines.append("")
+        return "\n".join(lines)
+```
+
+### Wiring the Semantic Layer Into Metric Definitions
+
+If you are using DBT's MetricFlow semantic layer, and for analytical queries you probably should be, you can expose metric definitions the same way:
+
+```python
+# semantic/metricflow_registry.py
+import yaml
+from pathlib import Path
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+
+class MetricFlowRegistry:
+    """
+    Indexes MetricFlow metric definitions for semantic retrieval.
+    Lets the model find 'cost per hire' or 'net exposure by counterparty'
+    without scanning every metrics YAML.
+    """
+    def __init__(self, metrics_dir: str):
+        self.metrics = []
+        self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
+        self._load_metrics(metrics_dir)
+        self._build_index()
+
+    def _load_metrics(self, metrics_dir: str):
+        for path in Path(metrics_dir).rglob("*.yml"):
+            with open(path) as f:
+                content = yaml.safe_load(f)
+            for metric in content.get("metrics", []):
+                self.metrics.append({
+                    "name":        metric["name"],
+                    "description": metric.get("description", ""),
+                    "type":        metric.get("type", ""),
+                    "label":       metric.get("label", ""),
+                    "dimensions":  [d["name"] for d in metric.get("dimensions", [])],
+                    "model":       metric.get("model", ""),
+                })
+
+    def _build_index(self):
+        texts = [
+            f"{m['name']} {m['label']} {m['description']} {' '.join(m['dimensions'])}"
+            for m in self.metrics
+        ]
+        self.embeddings = self.encoder.encode(texts)
+
+    def find_metrics(self, query: str, top_k: int = 3) -> str:
+        q_emb = self.encoder.encode([query])
+        scores = np.dot(self.embeddings, q_emb.T).flatten()
+        top_idx = scores.argsort()[-top_k:][::-1]
+
+        lines = ["## Relevant Metrics\n"]
+        for i in top_idx:
+            m = self.metrics[i]
+            lines.append(f"- **{m['name']}** ({m['type']}): {m['description']}")
+            if m["dimensions"]:
+                lines.append(f"  Dimensions: {', '.join(m['dimensions'])}")
+            if m["model"]:
+                lines.append(f"  Source model: {m['model']}")
+        return "\n".join(lines)
+```
+
+### Measuring the Token Savings
+
+The retrieval approach produces a saving you can actually measure. Here is one way to track it:
+
+```sql
+-- In your llm_usage table, add a schema_tokens_injected column.
+-- Then query the savings:
+SELECT
+    DATE_TRUNC('week', timestamp)            AS week,
+    AVG(schema_tokens_injected)              AS avg_schema_tokens,
+    -- Baseline: a full schema dump is ~80k tokens for a mature project
+    AVG(80000 - schema_tokens_injected)      AS tokens_saved_per_request,
+    COUNT(*)                                 AS sql_gen_requests,
+    SUM((80000 - schema_tokens_injected)
+        / 1_000_000.0 * 3.0)                AS schema_savings_usd
+FROM llm_usage
+WHERE task_type = 'sql_gen'
+GROUP BY 1
+ORDER BY 1 DESC;
+```
+
+For a team of 20 data engineers running 25 SQL generation queries a day, the gap between dumping the full schema and retrieving the top five relevant models is roughly:
+
+- Full schema: 80K tokens x 25 x 20 = 40M input tokens/day = **\$120/day**
+- Semantic retrieval: 2K tokens x 25 x 20 = 1M input tokens/day = **\$3/day**
+
+That is about a 97% reduction in schema-injection cost, and in my experience the quality usually improves too, because the model is not being distracted by forty tables it never needed to see.
+
+## Putting It Together: The Gateway
+
+All three components, the router, the cache, and the semantic layer, live inside a single gateway that your Airflow operators and engineer tooling call into:
+
+```python
+# gateway/llm_gateway.py
+from datetime import datetime
+from cache.cache_manager import CacheManager
+from router.classifier import PromptRouter
+from cache.prompt_builder import CacheOptimisedPromptBuilder
+from semantic.dbt_schema_registry import DBTSchemaRegistry
+from instrumentation import LLMRequestRecord, compute_cost, log_request
+import anthropic, time, hashlib, uuid
+
+
+class LLMGateway:
+    def __init__(self, db_conn):
+        self.cache    = CacheManager()
+        self.router   = PromptRouter()
+        self.schema   = DBTSchemaRegistry("target/manifest.json", "target/catalog.json")
+        self.builder  = CacheOptimisedPromptBuilder(self.schema)
+        self.client   = anthropic.Anthropic()
+        self.db_conn  = db_conn
+
+    def complete(self, task: str, engineer_id: str,
+                 tables_hint: list[str] = None,
+                 force_model: str = None) -> str:
+        # 1. Build the cache-optimised prompt
+        prompt = self.builder.build(task, tables_hint or [])
+
+        # 2. Route to the appropriate model
+        route = self.router.classify(task, context_token_count=len(prompt["user_message"]) // 4)
+        model_id = force_model or route["model"]
+
+        # 3. Check the cache
+        cache_key = self.cache.build_cache_key(
+            prompt["system"], prompt["user_message"], model_id
+        )
+        cached, hit = self.cache.get(cache_key)
+        if hit:
+            self._log(cached, model_id, route, hit=True, engineer_id=engineer_id)
+            return cached["content"]
+
+        # 4. Call the model
+        t0 = time.time()
+        response = self.client.messages.create(
+            model=model_id,
+            max_tokens=4096,
+            system=prompt["system"],
+            messages=[{"role": "user", "content": prompt["user_message"]}],
+        )
+        latency_ms = int((time.time() - t0) * 1000)
+
+        result = {
+            "content":          response.content[0].text,
+            "prompt_tokens":    response.usage.input_tokens,
+            "completion_tokens":response.usage.output_tokens,
+            "cache_tokens":     getattr(response.usage, "cache_read_input_tokens", 0),
+        }
+
+        # 5. Store in cache
+        self.cache.set(cache_key, result)
+
+        # 6. Instrument
+        self._log(result, model_id, route, hit=False,
+                  latency_ms=latency_ms, engineer_id=engineer_id,
+                  prompt_hash=cache_key)
+
+        return result["content"]
+
+    def _log(self, result, model_id, route, hit, engineer_id,
+             latency_ms=0, prompt_hash=""):
+        cache_tokens = result.get("cache_tokens", 0)
+        record = LLMRequestRecord(
+            request_id=str(uuid.uuid4()),
+            timestamp=datetime.utcnow().isoformat(),
+            model_id=model_id,
+            model_tier=route["tier"],
+            task_type=route["complexity"],
+            prompt_tokens=result.get("prompt_tokens", 0),
+            completion_tokens=result.get("completion_tokens", 0),
+            cache_hit=hit,
+            cache_tokens_saved=cache_tokens,
+            prompt_hash=prompt_hash,
+            cost_usd=compute_cost(model_id, result.get("prompt_tokens", 0),
+                                  result.get("completion_tokens", 0), cache_tokens),
+            latency_ms=latency_ms,
+            engineer_id=engineer_id,
+        )
+        log_request(record, self.db_conn)
+```
+
+## What This Looks Like in Practice
+
+Once these three components are deployed, the cost curve changes shape. Token usage keeps growing, and you want that, because it means your engineers are getting value out of the tools. But the cost per token trends down, for three reasons that compound:
+
+- Routing deflects simple tasks to open-weight models, which are 10 to 20 times cheaper.
+- Cache hit rates climb from around 5% when caching is bolted on to 50 to 70% when it is designed in.
+- Semantic schema retrieval collapses the per-request input token count.
+
+The Power BI dashboard then becomes a management tool rather than an alarm system. The headline metric shifts from total spend to cost per productive token, and the story it tells is the one you want: exponential usage, flat cost, and engineering leverage going up.
+
+That, in the end, is the infrastructure that makes AI adoption sustainable. Not caps, not friction, not alerts.
