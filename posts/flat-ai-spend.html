@@ -108,6 +108,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 <link rel="stylesheet" href="../styles.css">
@@ -866,7 +869,41 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="putting-it-together-the-gateway" class="level2">
 <h2 class="anchored" data-anchor-id="putting-it-together-the-gateway">Putting It Together: The Gateway</h2>
-<p>All three components, the router, the cache, and the semantic layer, live inside a single gateway that your Airflow operators and engineer tooling call into:</p>
+<p>All three components, the router, the cache, and the semantic layer, live inside a single gateway that your Airflow operators and engineer tooling call into. The request path looks like this:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TD
+    A[Engineer tooling / Airflow operator] --&gt; GW[LLM Gateway]
+
+    GW --&gt; B[Prompt Builder]
+    SR[(DBT Schema Registry&lt;br/&gt;manifest + catalog)] -. top-k retrieval .-&gt; B
+    B --&gt; R[Prompt Router&lt;br/&gt;local classifier&lt;br/&gt;selects model tier]
+
+    R --&gt; C{Cache hit?}
+    REDIS[(Redis cache)]
+    REDIS -. read .-&gt; C
+
+    C --&gt;|hit| HIT[Return cached response]
+    C --&gt;|miss| CALL[Call selected model&lt;br/&gt;+ prefix cache]
+
+    CALL --&gt;|simple| M1[Open-weight&lt;br/&gt;GLM / Kimi]
+    CALL --&gt;|moderate| M2[Mid-tier&lt;br/&gt;Qwen]
+    CALL --&gt;|complex / planning| M3[Frontier&lt;br/&gt;Sonnet / GPT-4o]
+    CALL -. write .-&gt; REDIS
+
+    HIT --&gt; LOG[(Instrumentation&lt;br/&gt;llm_usage table)]
+    CALL --&gt; LOG
+    LOG -. scheduled import .-&gt; BI[Power BI dashboard&lt;br/&gt;cost per token]
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>In code, that flow is the <code>complete</code> method below. Notice the cache check sits <em>after</em> routing, so the key is scoped per model:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># gateway/llm_gateway.py</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> datetime</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cache.cache_manager <span class="im">import</span> CacheManager</span>

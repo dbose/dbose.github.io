@@ -649,7 +649,34 @@ That is about a 97% reduction in schema-injection cost, and in my experience the
 
 ## Putting It Together: The Gateway
 
-All three components, the router, the cache, and the semantic layer, live inside a single gateway that your Airflow operators and engineer tooling call into:
+All three components, the router, the cache, and the semantic layer, live inside a single gateway that your Airflow operators and engineer tooling call into. The request path looks like this:
+
+```{mermaid}
+flowchart TD
+    A[Engineer tooling / Airflow operator] --> GW[LLM Gateway]
+
+    GW --> B[Prompt Builder]
+    SR[(DBT Schema Registry<br/>manifest + catalog)] -. top-k retrieval .-> B
+    B --> R[Prompt Router<br/>local classifier<br/>selects model tier]
+
+    R --> C{Cache hit?}
+    REDIS[(Redis cache)]
+    REDIS -. read .-> C
+
+    C -->|hit| HIT[Return cached response]
+    C -->|miss| CALL[Call selected model<br/>+ prefix cache]
+
+    CALL -->|simple| M1[Open-weight<br/>GLM / Kimi]
+    CALL -->|moderate| M2[Mid-tier<br/>Qwen]
+    CALL -->|complex / planning| M3[Frontier<br/>Sonnet / GPT-4o]
+    CALL -. write .-> REDIS
+
+    HIT --> LOG[(Instrumentation<br/>llm_usage table)]
+    CALL --> LOG
+    LOG -. scheduled import .-> BI[Power BI dashboard<br/>cost per token]
+```
+
+In code, that flow is the `complete` method below. Notice the cache check sits *after* routing, so the key is scoped per model:
 
 ```python
 # gateway/llm_gateway.py
