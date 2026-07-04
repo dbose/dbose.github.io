@@ -11,6 +11,7 @@
   {
     "listing": "/posts/index.html",
     "items": [
+      "/posts/flowproxy.html",
       "/posts/flat-ai-spend.html",
       "/posts/pagerank_critique.html"
     ]

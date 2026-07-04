@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="D. Bose">
+<meta name="dcterms.date" content="2026-07-04">
+<meta name="description" content="How I built a self-hosted semantic proxy over dbt-core and MetricFlow that speaks the PostgreSQL wire protocol, so Amazon QuickSight and LLM agents can query governed metrics with the guardrails in the YAML enforced automatically. Covers the wire-protocol emulation, the semi-additive guardrail proof, auto-cube exploration, an embedded MCP server, and an air-gapped CI/CD deploy model with blue/green manifest hot-swap.">
+
+<title>Building FlowProxy: a dbt Semantic Layer that BI tools can actually reach – Deb Bose</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-637a8987fd156daea465eecdbde71ac9.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Deb Bose</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../posts/"> 
+<span class="menu-text">Articles</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../notebooks/index.html"> 
+<span class="menu-text">Notebooks</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../papers/index.html"> 
+<span class="menu-text">Papers</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/dbose"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-one-trick-the-whole-thing-rests-on" id="toc-the-one-trick-the-whole-thing-rests-on" class="nav-link active" data-scroll-target="#the-one-trick-the-whole-thing-rests-on">The one trick the whole thing rests on</a></li>
+  <li><a href="#pinning-a-stack-that-moves-in-lockstep" id="toc-pinning-a-stack-that-moves-in-lockstep" class="nav-link" data-scroll-target="#pinning-a-stack-that-moves-in-lockstep">Pinning a stack that moves in lockstep</a></li>
+  <li><a href="#talking-to-a-driver-that-expects-postgres" id="toc-talking-to-a-driver-that-expects-postgres" class="nav-link" data-scroll-target="#talking-to-a-driver-that-expects-postgres">Talking to a driver that expects Postgres</a></li>
+  <li><a href="#following-one-query-all-the-way-down" id="toc-following-one-query-all-the-way-down" class="nav-link" data-scroll-target="#following-one-query-all-the-way-down">Following one query all the way down</a></li>
+  <li><a href="#the-proof-i-actually-cared-about" id="toc-the-proof-i-actually-cared-about" class="nav-link" data-scroll-target="#the-proof-i-actually-cared-about">The proof I actually cared about</a></li>
+  <li><a href="#letting-analysts-explore-not-just-query" id="toc-letting-analysts-explore-not-just-query" class="nav-link" data-scroll-target="#letting-analysts-explore-not-just-query">Letting analysts explore, not just query</a></li>
+  <li><a href="#the-same-layer-but-for-an-llm" id="toc-the-same-layer-but-for-an-llm" class="nav-link" data-scroll-target="#the-same-layer-but-for-an-llm">The same layer, but for an LLM</a></li>
+  <li><a href="#how-the-thing-gets-deployed-which-is-half-the-product" id="toc-how-the-thing-gets-deployed-which-is-half-the-product" class="nav-link" data-scroll-target="#how-the-thing-gets-deployed-which-is-half-the-product">How the thing gets deployed, which is half the product</a></li>
+  <li><a href="#swapping-the-manifest-without-dropping-a-connection" id="toc-swapping-the-manifest-without-dropping-a-connection" class="nav-link" data-scroll-target="#swapping-the-manifest-without-dropping-a-connection">Swapping the manifest without dropping a connection</a></li>
+  <li><a href="#where-this-honestly-stands" id="toc-where-this-honestly-stands" class="nav-link" data-scroll-target="#where-this-honestly-stands">Where this honestly stands</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Building FlowProxy: a dbt Semantic Layer that BI tools can actually reach</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">Data Engineering</div>
+    <div class="quarto-category">DBT</div>
+    <div class="quarto-category">Semantic Layer</div>
+    <div class="quarto-category">MetricFlow</div>
+    <div class="quarto-category">PostgreSQL</div>
+    <div class="quarto-category">BI</div>
+    <div class="quarto-category">MCP</div>
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">Air-gapped</div>
+    <div class="quarto-category">Architecture</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    How I built a self-hosted semantic proxy over dbt-core and MetricFlow that speaks the PostgreSQL wire protocol, so Amazon QuickSight and LLM agents can query governed metrics with the guardrails in the YAML enforced automatically. Covers the wire-protocol emulation, the semi-additive guardrail proof, auto-cube exploration, an embedded MCP server, and an air-gapped CI/CD deploy model with blue/green manifest hot-swap.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>D. Bose </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">July 4, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>The dbt Semantic Layer is a good idea with a distribution problem. You define a metric once, in YAML, next to the models that produce it. MetricFlow compiles that definition into correct warehouse SQL, joins and all. And then you go to plug it into your BI tool, and the tool shrugs, because outside dbt Cloud there is no connector for it.</p>
+<p>QuickSight cannot read it. Power BI cannot read it. Your analysts, who live in those tools all day, cannot reach the thing you built for them.</p>
+<p>So they do what people always do when the governed path is blocked. They copy the metric logic into the BI tool by hand, where it drifts, and where a semi-additive balance quietly gets summed across thirty days into a number that is wrong by a factor of thirty. Nobody notices until a regulator does.</p>
+<p>FlowProxy is my answer to that. The code is on GitHub at <a href="https://github.com/dbose/flowproxy">dbose/flowproxy</a>. This article is the build log, told roughly in the order the pieces actually got built, including the parts where I was wrong.</p>
+<p>It started, like most of my projects do, as one line I could not stop turning over. What if the semantic layer just pretended to be a database.</p>
+<section id="the-one-trick-the-whole-thing-rests-on" class="level2">
+<h2 class="anchored" data-anchor-id="the-one-trick-the-whole-thing-rests-on">The one trick the whole thing rests on</h2>
+<p>Every BI tool on earth speaks PostgreSQL. QuickSight ships a PostgreSQL connector. Power BI ships Npgsql. The connectors are already installed, already blessed by the security team, already working.</p>
+<p>So FlowProxy pretends to be a PostgreSQL server.</p>
+<p>Not a real one. A very specific impersonation: it implements enough of the PostgreSQL v3 wire protocol that a BI driver believes it is talking to Postgres 15, but underneath, every query is intercepted, re-planned through MetricFlow, executed against the real warehouse, and streamed back as if it had come from an ordinary table.</p>
+<p>The load-bearing property is this. FlowProxy never runs the client’s SQL. It parses the SQL to find out which metrics and dimensions were requested, throws the SQL away, and asks MetricFlow to plan the query from the metric names. That indirection is the whole game. Because the query is rebuilt from the YAML rather than passed through, a BI tool that wraps a metric in <code>SUM()</code> cannot change what the metric means. The guardrails in git are the guardrails at runtime. There is no bypass, for anyone, ever.</p>
+<pre class="mermaid"><code>flowchart LR
+    QS["QuickSight / Power BI / LLM"] --&gt;|SQL or MCP tools| FP["FlowProxy"]
+    FP --&gt;|re-plan through MetricFlow| WH[("Warehouse")]
+    YML["git: sem_*.yml"] -.-&gt;|dbt parse| FP
+    classDef a fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+    classDef b fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+    class QS a;
+    class FP b;</code></pre>
+</section>
+<section id="pinning-a-stack-that-moves-in-lockstep" class="level2">
+<h2 class="anchored" data-anchor-id="pinning-a-stack-that-moves-in-lockstep">Pinning a stack that moves in lockstep</h2>
+<p>Before any of that, a smaller lesson, learned early and cheaply. dbt-core, dbt-semantic-interfaces, metricflow, and dbt-metricflow are four packages that only work together in matched sets. Guess the versions and the resolver hands you a wall of conflicts.</p>
+<p>My first attempt guessed. It was wrong. So I stopped guessing and asked the resolver what dbt-core 1.11 actually pulls, and wrote down what it said: dbt-core 1.11.12, metricflow 0.211.0, dbt-metricflow 0.13.0, dbt-semantic-interfaces 0.9.0, and dbt-duckdb 1.10.1 underneath. Those are now pinned in <code>pyproject.toml</code>, locked in <code>uv.lock</code>, and asserted at boot, so the process refuses to start on version drift rather than failing three layers deep with an unhelpful traceback an hour later. The whole thing runs on <code>uv</code>, which for an air-gapped shop means one lockfile you can vendor through the internal mirror and reproduce byte for byte.</p>
+<p>Small thing. But in this ecosystem the version matrix is not a footnote, it is a prerequisite, and treating it as one saved me from a category of bug I would otherwise have hit over and over.</p>
+</section>
+<section id="talking-to-a-driver-that-expects-postgres" class="level2">
+<h2 class="anchored" data-anchor-id="talking-to-a-driver-that-expects-postgres">Talking to a driver that expects Postgres</h2>
+<p>Wire-protocol emulation sounds harder than it is, and then in the details it is exactly as hard as it sounds.</p>
+<p>The easy part is the shape. A connection opens, the client sends an SSLRequest, you decline it with a single byte, the client sends a StartupMessage, you answer with an authentication challenge, a pile of <code>ParameterStatus</code> packets, a <code>BackendKeyData</code>, and finally the <code>ReadyForQuery</code> byte that says: go ahead, ask me something. Then queries arrive tagged <code>Q</code> for the simple protocol or a sequence of <code>P</code>, <code>B</code>, <code>D</code>, <code>E</code>, <code>S</code> for the extended protocol that JDBC and ODBC drivers actually use under the hood. You reply with a <code>RowDescription</code>, some <code>DataRow</code> packets, a <code>CommandComplete</code>. I built all of this on asyncio, one state machine per connection.</p>
+<p>The hard part is that drivers do not just run your query. Before QuickSight will show you a single table, its JDBC driver interrogates the server. What is your version. What is in <code>pg_catalog</code>. What columns does <code>information_schema.columns</code> have for this relation. It runs a dozen introspection queries that have nothing to do with data and everything to do with the driver convincing itself the server is real.</p>
+<p>If you answer those wrong, the datasource pane is blank, and the analyst never gets to the interesting part. So a good chunk of the work was not semantics at all. It was learning what QuickSight’s driver asks at connect time, and answering it the way a real Postgres would, so the handshake completes and the tables appear.</p>
+<p>Power BI is stricter still. Npgsql runs a large composite bootstrap query against <code>pg_type</code> at connect, and expects coherent object IDs across <code>pg_class</code>, <code>pg_attribute</code>, and <code>pg_namespace</code>. I have that stubbed rather than done. QuickSight works today; Power BI is the next mountain. I would rather ship the honest version of that sentence than the marketing one.</p>
+</section>
+<section id="following-one-query-all-the-way-down" class="level2">
+<h2 class="anchored" data-anchor-id="following-one-query-all-the-way-down">Following one query all the way down</h2>
+<p>It helps to watch a single request go through, because the whole design is really just this one path, run a few million times.</p>
+<p>An analyst drags Account Balance and Region onto a chart. QuickSight turns that into <code>SELECT "account__region", "account_balance" FROM "daily_balances" GROUP BY 1</code> and sends it over the socket. The server tags it as a data query, not driver chatter. sqlglot parses it. Out come a cube name, a metric, a dimension, and, if the analyst had set the field to Sum in the QuickSight UI, an aggregate wrapper that gets peeled off and discarded, because the aggregation lives in the metric, not the SQL.</p>
+<p>That distilled request goes to the compiler. MetricFlow plans it, renders the semi-additive window as a <code>MAX(balance_date)</code> join, walks the entity graph to reach region from the account, and runs the result in the warehouse. The rows come back in MetricFlow’s own column order, which is not the order the client asked for, so the server re-projects them, wraps them in a <code>RowDescription</code> and <code>DataRow</code> packets and a <code>CommandComplete</code>, and QuickSight draws the chart. End of period balances, two regions, done.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    participant QS as QuickSight
+    participant S as server
+    participant P as parser + filters
+    participant C as compiler
+    participant W as Warehouse
+    QS-&gt;&gt;S: SELECT region, account_balance ... GROUP BY 1
+    S-&gt;&gt;P: classify, then extract
+    Note over P: cube, metric, dimension&lt;br/&gt;SUM() wrapper stripped
+    P-&gt;&gt;C: metrics + dims + filters
+    Note over C: plan semi-additive MAX window,&lt;br/&gt;join account to region
+    C-&gt;&gt;W: optimized warehouse SQL
+    W--&gt;&gt;C: rows
+    C--&gt;&gt;S: re-project to client order
+    S--&gt;&gt;QS: T + D rows + C</code></pre>
+<p>Every stage logs a line, <code>pipeline stage 1 of 3</code> and so on, so when something goes wrong I can follow the request from the raw bytes to the plan to the warehouse without guessing. That logging was not vanity. It is how I found the bug in the next section.</p>
+</section>
+<section id="the-proof-i-actually-cared-about" class="level2">
+<h2 class="anchored" data-anchor-id="the-proof-i-actually-cared-about">The proof I actually cared about</h2>
+<p>Here is the test that made me trust the whole thing. It is not a protocol test. It is a numbers test.</p>
+<p>I built a small but real dbt-core 1.11 project. Two accounts, two regions, three months of daily end-of-day balances seeded so the month-end values are round and hand-checkable. Then a semantic model with a semi-additive measure, the classic account-balance case:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">measures</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> month_end_balance</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">agg</span><span class="kw">:</span><span class="at"> sum</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> eod_balance</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">non_additive_dimension</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> balance_date</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">window_choice</span><span class="kw">:</span><span class="at"> max</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>non_additive_dimension</code> is the guardrail. It tells MetricFlow that this measure is summable across accounts but not across time. Over a month you want the last daily balance, not the sum of thirty of them.</p>
+<p>I ran the query for real, against DuckDB, through the compiler. Grouped by month and region, <code>account_balance</code> came back as 1500, 1200, 2000 for one region and 4000, 4500, 3000 for the other. Exactly the seeded month-end values. Then I ran a deliberately naive <code>SUM</code> of the same column, and got 31,500 and 154,000 and numbers that are absurd on their face, because they add up daily snapshots that should never be added.</p>
+<p>The two differ by roughly thirty times. That gap is the point. It means the guardrail is load-bearing: a BI tool that emits <code>SUM(eod_balance)</code> produces a materially wrong balance, and FlowProxy refuses to produce it, because the request routes through the metric definition and the metric knows better.</p>
+<p>I assert those exact numbers in the test suite. Three ways, actually. Once directly against the compiler, once over a real TCP socket the way QuickSight would hit it, and once through the LLM path, so all three consumers are provably answering with the same arithmetic.</p>
+<p>And this is where the test earned its keep. The very first run of the region-grouped query did not return 1050 for one region’s transactions. It returned 95,550. Nowhere near.</p>
+<p>The cause was a modeling mistake I had made without noticing. I had declared the region dimension on two semantic models at once, so when MetricFlow needed to reach region for a transaction metric, it joined transactions to the 182-row daily-balance table and fanned every transaction out across all its balance rows. A textbook fan-out double-count. The fix was proper dimensional modeling, a dedicated accounts dimension model that owns the account attributes, so there is one unambiguous join path. But the point is that a mock executor would have sailed straight past this. It would have returned some plausible-looking synthetic number and I would have shipped a silent factor-of-ninety error into a bank. Only executing real SQL against real seeded data catches a wrong number, because a wrong number looks exactly like a right one until you check it against arithmetic you did by hand.</p>
+<p>That is the whole philosophy of the test suite, which I ended up thinking of as a pyramid. At the bottom, a wire-protocol smoke test that just checks the framing. Above it, a manifest test that confirms the registry classifies names correctly out of a real <code>dbt parse</code>. Then the golden-numbers layer, which is the one that matters, executing against DuckDB and asserting exact aggregates. Then filter translation, catalog discovery over a socket, and the MCP consistency check on top. Seventy-seven tests now. Several of them found real bugs rather than confirming happy paths, which is the only kind of test worth writing.</p>
+<p>The DuckDB choice matters here and I want to be plain about it. DuckDB is a real dbt adapter that runs fully offline, which makes the whole test suite hermetic and air-gappable. It also means the only dialect I have actually proven is DuckDB. Snowflake and Redshift are inference. Reasonable inference, since MetricFlow renders the dialect, but inference.</p>
+</section>
+<section id="letting-analysts-explore-not-just-query" class="level2">
+<h2 class="anchored" data-anchor-id="letting-analysts-explore-not-just-query">Letting analysts explore, not just query</h2>
+<p>An analyst does not type SQL. They open a tool, they see tables, they drag fields onto a chart. So a semantic layer that only answers hand-written queries is useless to the people it is meant to serve.</p>
+<p>The model I landed on is the one Lightdash uses, and it turned out to be the only one QuickSight can support. Each dbt semantic model becomes a virtual table, a cube, in a schema called <code>semantic_layer</code>. The analyst browses to it, sees its metrics and dimensions as columns, drags what they want. QuickSight emits a <code>GROUP BY</code>, FlowProxy re-plans it, the numbers come back.</p>
+<p>There is one subtlety I am quietly proud of. Each cube is pre-scoped to only the dimensions that are actually reachable for its metrics. So the daily-balances cube does not even show a transaction-only dimension as a column. The analyst cannot drag an invalid slice onto a chart, because the field is not there to drag. The guardrail is not an error message after the fact. It is an absence, up front.</p>
+<p>I looked hard at the dbt Cloud pattern, where drag-and-drop becomes a <code>semantic_layer.query(...)</code> call over an Arrow Flight SQL driver. It is elegant. It is also unavailable to us, because QuickSight has no such driver and no way for an analyst to hand-author that call in the UI. Sometimes the constraint picks the architecture for you.</p>
+</section>
+<section id="the-same-layer-but-for-an-llm" class="level2">
+<h2 class="anchored" data-anchor-id="the-same-layer-but-for-an-llm">The same layer, but for an LLM</h2>
+<p>Once the pipeline existed, exposing it to an LLM was almost free, and philosophically important.</p>
+<p>dbt Labs publishes a reference MCP server with three semantic-layer tools: <code>list_metrics</code>, <code>get_dimensions</code>, <code>query_metrics</code>. Their implementation calls dbt Cloud. Mine cannot, because dbt Cloud is not in the building. So I reimplemented the same three tools, same names and shapes, against FlowProxy’s own compiler, in-process.</p>
+<p>The reason that matters is not convenience. It is governance. Because <code>query_metrics</code> calls the exact same pipeline as a wire query, an LLM gets the exact same guardrails as an analyst. It cannot sum a semi-additive balance. It cannot reach a dimension that is not on a valid join path; it gets a structured error listing the ones that are. I wrote a test that asserts the LLM path returns numbers identical to the wire path, because if those two ever diverged, one of them would be lying, and you would not know which.</p>
+<p>An LLM with raw warehouse access is a governance hole with a chat interface. An LLM behind the semantic layer is just another well-behaved consumer. Same door, same locks.</p>
+</section>
+<section id="how-the-thing-gets-deployed-which-is-half-the-product" class="level2">
+<h2 class="anchored" data-anchor-id="how-the-thing-gets-deployed-which-is-half-the-product">How the thing gets deployed, which is half the product</h2>
+<p>For a while the runtime ran <code>dbt parse</code> on boot against a mounted project. That is fine for a demo and wrong for a bank, and figuring out why was one of the more useful detours.</p>
+<p>The problem is that parsing needs the whole dbt project and warehouse-DDL credentials, at runtime, in production. That is a lot of blast radius for a service whose only job is to answer SELECTs. And a bad YAML edit does not fail until the proxy boots, which is the worst possible place to find out.</p>
+<p>So I split it. Producing the manifest is a CI job. Consuming it is the runtime. In between sits a versioned, integrity-checked bundle in an artifact store.</p>
+<pre class="mermaid"><code>flowchart LR
+    GIT["git: sem_*.yml"] --&gt; GATE["CI validate&lt;br/&gt;(offline, plan-only)"]
+    GATE --&gt;|blocks broken YAML| STOP(("x"))
+    GATE --&gt;|on release| STORE[("ManifestStore&lt;br/&gt;s3 / gs / az / artifactory")]
+    STORE --&gt;|pull + verify| PROXY["FlowProxy"]
+    PROXY --&gt;|blue/green hot-swap| PROXY
+    classDef a fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+    classDef b fill:#fff3e0,stroke:#e65100,color:#bf360c;
+    classDef c fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+    class GIT,GATE a;
+    class STORE b;
+    class PROXY c;</code></pre>
+<p>The CI gate is offline and plan-only. It runs <code>dbt parse</code>, then asks MetricFlow to plan every saved query and every cube, without executing anything, which needs no warehouse credentials at all. If a join path broke, or a dimension was renamed, or a metric was deleted out from under a saved query, the plan fails and the deploy is blocked. On a pull request it validates and stops there. Only on a production release does it publish the bundle. That asymmetry was a deliberate ask, and the GitHub Actions workflow encodes it directly.</p>
+<p>The bundle carries no secrets. It has the semantic manifest, some metadata with a git SHA and a checksum and the validation report, and a profiles template that describes the shape of the warehouse connection but not the credentials. Those get injected at runtime from the secret store, the same way dbt itself resolves env vars in a profile. Credentials never touch git, never touch the bundle, never touch the artifact store.</p>
+<p>The store abstraction is one interface over <code>fsspec</code>, so <code>s3://</code>, <code>gs://</code>, <code>az://</code>, a local file, an Artifactory URL, are all the same code path chosen by a config string. A bank points it at their internal MinIO and nothing in FlowProxy has to change.</p>
+</section>
+<section id="swapping-the-manifest-without-dropping-a-connection" class="level2">
+<h2 class="anchored" data-anchor-id="swapping-the-manifest-without-dropping-a-connection">Swapping the manifest without dropping a connection</h2>
+<p>The runtime consumes a bundle and, when a new one lands, swaps to it live. Blue/green. It builds the new semantic layer in the background, and only when that build succeeds and validates does a single reference flip to the new version. Old connections finish on the manifest they started on. A failed build logs and keeps the current version serving, so a bad publish can never take the proxy down.</p>
+<p>Getting there required one genuinely tricky bit of research that I want to record, because it nearly bit me.</p>
+<p>To build a MetricFlow engine you need the dbt adapter, and to get the adapter the cleanest path runs <code>dbt debug</code> under the hood, which mutates global state in the dbt libraries. Adapter registration is not a pure function. It scribbles on module-level singletons. Which means you cannot naively rebuild two engines concurrently in one process and expect sanity. I found this in a spike, before it was load-bearing, which is the good time to find it. The swap now serializes engine construction under a lock. Discovering that early was worth more than any feature.</p>
+</section>
+<section id="where-this-honestly-stands" class="level2">
+<h2 class="anchored" data-anchor-id="where-this-honestly-stands">Where this honestly stands</h2>
+<p>I will not oversell it. The novel and risky parts are done and proven: the semantics, the guardrails, the wire path, the deploy model. That is real, and it is the hard 70 percent.</p>
+<p>The rest is known-shaped work that a bank would insist on before a pilot. Authentication is still trust-mode; SCRAM, per-role metric ACLs, and an audit log are designed but not built. Power BI is stubbed. I have benchmarked nothing, so every performance claim is a hypothesis, and the question of whether the wire edge should eventually be rewritten in Rust is deliberately parked behind measured triggers rather than vibes.</p>
+<p>There are honest edges, too, the kind you only find by using the thing. QuickSight has to run in Direct Query mode, because its SPICE ingestion issues <code>SELECT *</code>, and a star has no semantic mapping. In-protocol TLS is declined; you terminate TLS at a load balancer in front. Bound parameters get rejected, so filters have to be inline literals for now. And the wide all-metrics table, the one that lets you explore across models, can express metric and dimension pairs that do not join, which fail with a guided error listing the ones that do. None of those are surprises. All of them are written down, because the difference between a demo and a tool is whether the sharp edges are documented or discovered.</p>
+<p>Every decision along the way is recorded as an ADR in the repo, fifteen of them now, so the reasoning is auditable and not just the code. If you want to see the numbers prove themselves, the quick start builds the demo project into DuckDB and has a proxy answering <code>psql</code> in about four commands. It needs no warehouse and no cloud.</p>
+<p>But the shape is right. One definition in git, reachable by every consumer, with the guardrails enforced in one place and bypassable by none. An analyst drags a semi-additive balance onto a chart and gets the end-of-month number. An LLM asks the same question and gets the same number. And when someone edits the YAML, a gate catches the mistake before it ships, and the fix rolls out without dropping a connection.</p>
+<p>That was the thing I wanted to exist. Now it mostly does. The rest is on <a href="https://github.com/dbose/flowproxy">GitHub</a>, warts and roadmap included.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/dbose\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
