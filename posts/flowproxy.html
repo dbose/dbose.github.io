@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="D. Bose">
-<meta name="dcterms.date" content="2026-07-04">
-<meta name="description" content="How I built a self-hosted semantic proxy over dbt-core and MetricFlow that speaks the PostgreSQL wire protocol, so Amazon QuickSight and LLM agents can query governed metrics with the guardrails in the YAML enforced automatically. Covers the wire-protocol emulation, the semi-additive guardrail proof, auto-cube exploration, an embedded MCP server, and an air-gapped CI/CD deploy model with blue/green manifest hot-swap.">
+<meta name="dcterms.date" content="2026-07-06">
+<meta name="description" content="How I built a self-hosted semantic proxy over dbt-core and MetricFlow that speaks the PostgreSQL wire protocol, so Amazon QuickSight and LLM agents can query governed metrics with the guardrails in the YAML enforced automatically. Covers the wire-protocol emulation, the semi-additive guardrail proof, auto-cube exploration, an embedded MCP server, an air-gapped CI/CD deploy model with blue/green manifest hot-swap, and the nine bugs it took to get a live QuickSight demo on AWS working end to end.">
 
 <title>Building FlowProxy: a dbt Semantic Layer that BI tools can actually reach – Deb Bose</title>
 <style>
@@ -182,6 +182,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#the-same-layer-but-for-an-llm" id="toc-the-same-layer-but-for-an-llm" class="nav-link" data-scroll-target="#the-same-layer-but-for-an-llm">The same layer, but for an LLM</a></li>
   <li><a href="#how-the-thing-gets-deployed-which-is-half-the-product" id="toc-how-the-thing-gets-deployed-which-is-half-the-product" class="nav-link" data-scroll-target="#how-the-thing-gets-deployed-which-is-half-the-product">How the thing gets deployed, which is half the product</a></li>
   <li><a href="#swapping-the-manifest-without-dropping-a-connection" id="toc-swapping-the-manifest-without-dropping-a-connection" class="nav-link" data-scroll-target="#swapping-the-manifest-without-dropping-a-connection">Swapping the manifest without dropping a connection</a></li>
+  <li><a href="#it-works-and-here-is-the-proof" id="toc-it-works-and-here-is-the-proof" class="nav-link" data-scroll-target="#it-works-and-here-is-the-proof">It works, and here is the proof</a></li>
   <li><a href="#where-this-honestly-stands" id="toc-where-this-honestly-stands" class="nav-link" data-scroll-target="#where-this-honestly-stands">Where this honestly stands</a></li>
   </ul>
 </nav>
@@ -208,7 +209,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <div>
   <div class="description">
-    How I built a self-hosted semantic proxy over dbt-core and MetricFlow that speaks the PostgreSQL wire protocol, so Amazon QuickSight and LLM agents can query governed metrics with the guardrails in the YAML enforced automatically. Covers the wire-protocol emulation, the semi-additive guardrail proof, auto-cube exploration, an embedded MCP server, and an air-gapped CI/CD deploy model with blue/green manifest hot-swap.
+    How I built a self-hosted semantic proxy over dbt-core and MetricFlow that speaks the PostgreSQL wire protocol, so Amazon QuickSight and LLM agents can query governed metrics with the guardrails in the YAML enforced automatically. Covers the wire-protocol emulation, the semi-additive guardrail proof, auto-cube exploration, an embedded MCP server, an air-gapped CI/CD deploy model with blue/green manifest hot-swap, and the nine bugs it took to get a live QuickSight demo on AWS working end to end.
   </div>
 </div>
 
@@ -225,7 +226,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">July 4, 2026</p>
+      <p class="date">July 6, 2026</p>
     </div>
   </div>
   
@@ -354,14 +355,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Getting there required one genuinely tricky bit of research that I want to record, because it nearly bit me.</p>
 <p>To build a MetricFlow engine you need the dbt adapter, and to get the adapter the cleanest path runs <code>dbt debug</code> under the hood, which mutates global state in the dbt libraries. Adapter registration is not a pure function. It scribbles on module-level singletons. Which means you cannot naively rebuild two engines concurrently in one process and expect sanity. I found this in a spike, before it was load-bearing, which is the good time to find it. The swap now serializes engine construction under a lock. Discovering that early was worth more than any feature.</p>
 </section>
+<section id="it-works-and-here-is-the-proof" class="level2">
+<h2 class="anchored" data-anchor-id="it-works-and-here-is-the-proof">It works, and here is the proof</h2>
+<p>I put it on AWS. A t3.micro running the container, pulling the bundle and a DuckDB file from S3, QuickSight connecting to it over the public internet with a password. Then I built two tables in QuickSight, the same drag-and-drop both times, and took a screenshot of each.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/quicksight-account-balance.png" class="img-fluid figure-img"></p>
+<figcaption>The governed metric in QuickSight: account balance by region, AMER 3,000 and EMEA 2,000, the end-of-period balances</figcaption>
+</figure>
+</div>
+<p>That is the semi-additive metric. AMER 3,000, EMEA 2,000. Note the title QuickSight gave it: “Sum of Account_balance.” QuickSight applied a SUM. The number is still the end-of-period balance, because the SUM never reached the warehouse. The parser unwrapped it and MetricFlow re-planned the query through the metric definition, where <code>window_choice: max</code> says take the last value, not add them up.</p>
+<p>Here is the same cube, same region grouping, same SUM, but dragging the naive metric instead:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/quicksight-naive-total.png" class="img-fluid figure-img"></p>
+<figcaption>The naive metric in QuickSight: naive balance total by region, AMER 408,500 and EMEA 112,700, inflated by summing every daily snapshot</figcaption>
+</figure>
+</div>
+<p>AMER 408,500. EMEA 112,700. Off by more than a hundred times, because this metric really does add up every daily snapshot, which is exactly the wrong thing to do with a balance.</p>
+<p>Two tables. Same tool, same clicks, same aggregation. One number is right and one is nonsense, and the semantic layer is the only thing that decides which. That is the whole product in a single side-by-side. An analyst cannot get the wrong number on the governed metric, no matter what their BI tool does, because the meaning was decided once in YAML and enforced at query time for everyone.</p>
+<p>It took nine bugs after the offline rehearsal was green to get here. The DuckDB file’s catalog name deriving from its basename. A missing S3 driver in the image. The catalog responders ignoring column aliases. The extended wire protocol path not handling catalog probes. A matcher that grabbed the wrong schema out of a CASE expression. QuickSight’s real getColumns being a windowed subquery, then a pg_settings probe that had to return exactly one row, then the data query’s own column aliases coming back mislabeled as NULL. Every one was real, and every one was found the same way: my tests modeled the logic, and the logs showed what QuickSight actually did. The gap between those two is where all the bugs lived. I now have a test that replays QuickSight’s real probe sequence, which is the thing I should have built first and understood only after the eighth surprise.</p>
+</section>
 <section id="where-this-honestly-stands" class="level2">
 <h2 class="anchored" data-anchor-id="where-this-honestly-stands">Where this honestly stands</h2>
-<p>I will not oversell it. The novel and risky parts are done and proven: the semantics, the guardrails, the wire path, the deploy model. That is real, and it is the hard 70 percent.</p>
+<p>I will not oversell the rest of it. The novel and risky parts are done and proven: the semantics, the guardrails, the wire path, the deploy model, and now the live demo. That is real.</p>
 <p>The rest is known-shaped work that a bank would insist on before a pilot. Authentication is still trust-mode; SCRAM, per-role metric ACLs, and an audit log are designed but not built. Power BI is stubbed. I have benchmarked nothing, so every performance claim is a hypothesis, and the question of whether the wire edge should eventually be rewritten in Rust is deliberately parked behind measured triggers rather than vibes.</p>
 <p>There are honest edges, too, the kind you only find by using the thing. QuickSight has to run in Direct Query mode, because its SPICE ingestion issues <code>SELECT *</code>, and a star has no semantic mapping. In-protocol TLS is declined; you terminate TLS at a load balancer in front. Bound parameters get rejected, so filters have to be inline literals for now. And the wide all-metrics table, the one that lets you explore across models, can express metric and dimension pairs that do not join, which fail with a guided error listing the ones that do. None of those are surprises. All of them are written down, because the difference between a demo and a tool is whether the sharp edges are documented or discovered.</p>
 <p>Every decision along the way is recorded as an ADR in the repo, fifteen of them now, so the reasoning is auditable and not just the code. If you want to see the numbers prove themselves, the quick start builds the demo project into DuckDB and has a proxy answering <code>psql</code> in about four commands. It needs no warehouse and no cloud.</p>
-<p>But the shape is right. One definition in git, reachable by every consumer, with the guardrails enforced in one place and bypassable by none. An analyst drags a semi-additive balance onto a chart and gets the end-of-month number. An LLM asks the same question and gets the same number. And when someone edits the YAML, a gate catches the mistake before it ships, and the fix rolls out without dropping a connection.</p>
-<p>That was the thing I wanted to exist. Now it mostly does. The rest is on <a href="https://github.com/dbose/flowproxy">GitHub</a>, warts and roadmap included.</p>
+<p>But the shape is right, and now it is not just a shape. One definition in git, reachable by every consumer, with the guardrails enforced in one place and bypassable by none. An analyst drags a semi-additive balance onto a chart in QuickSight and gets the end-of-period number, and I have the screenshot. An LLM asks the same question and gets the same number. When someone edits the YAML, a gate catches the mistake before it ships, and the fix rolls out without dropping a connection.</p>
+<p>That was the thing I wanted to exist. Now it does. The rest is on <a href="https://github.com/dbose/flowproxy">GitHub</a>, warts and roadmap included.</p>
 
 
 </section>
