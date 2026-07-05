@@ -34,7 +34,7 @@ Not a real one. A very specific impersonation: it implements enough of the Postg
 
 The load-bearing property is this. FlowProxy never runs the client's SQL. It parses the SQL to find out which metrics and dimensions were requested, throws the SQL away, and asks MetricFlow to plan the query from the metric names. That indirection is the whole game. Because the query is rebuilt from the YAML rather than passed through, a BI tool that wraps a metric in `SUM()` cannot change what the metric means. The guardrails in git are the guardrails at runtime. There is no bypass, for anyone, ever.
 
-```mermaid
+```{mermaid}
 flowchart LR
     QS["QuickSight / Power BI / LLM"] -->|SQL or MCP tools| FP["FlowProxy"]
     FP -->|re-plan through MetricFlow| WH[("Warehouse")]
@@ -73,7 +73,7 @@ An analyst drags Account Balance and Region onto a chart. QuickSight turns that 
 
 That distilled request goes to the compiler. MetricFlow plans it, renders the semi-additive window as a `MAX(balance_date)` join, walks the entity graph to reach region from the account, and runs the result in the warehouse. The rows come back in MetricFlow's own column order, which is not the order the client asked for, so the server re-projects them, wraps them in a `RowDescription` and `DataRow` packets and a `CommandComplete`, and QuickSight draws the chart. End of period balances, two regions, done.
 
-```mermaid
+```{mermaid}
 sequenceDiagram
     participant QS as QuickSight
     participant S as server
@@ -153,7 +153,7 @@ The problem is that parsing needs the whole dbt project and warehouse-DDL creden
 
 So I split it. Producing the manifest is a CI job. Consuming it is the runtime. In between sits a versioned, integrity-checked bundle in an artifact store.
 
-```mermaid
+```{mermaid}
 flowchart LR
     GIT["git: sem_*.yml"] --> GATE["CI validate<br/>(offline, plan-only)"]
     GATE -->|blocks broken YAML| STOP(("x"))
