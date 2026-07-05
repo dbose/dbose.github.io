@@ -108,6 +108,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 <link rel="stylesheet" href="../styles.css">
@@ -249,14 +252,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>So FlowProxy pretends to be a PostgreSQL server.</p>
 <p>Not a real one. A very specific impersonation: it implements enough of the PostgreSQL v3 wire protocol that a BI driver believes it is talking to Postgres 15, but underneath, every query is intercepted, re-planned through MetricFlow, executed against the real warehouse, and streamed back as if it had come from an ordinary table.</p>
 <p>The load-bearing property is this. FlowProxy never runs the client’s SQL. It parses the SQL to find out which metrics and dimensions were requested, throws the SQL away, and asks MetricFlow to plan the query from the metric names. That indirection is the whole game. Because the query is rebuilt from the YAML rather than passed through, a BI tool that wraps a metric in <code>SUM()</code> cannot change what the metric means. The guardrails in git are the guardrails at runtime. There is no bypass, for anyone, ever.</p>
-<pre class="mermaid"><code>flowchart LR
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
     QS["QuickSight / Power BI / LLM"] --&gt;|SQL or MCP tools| FP["FlowProxy"]
     FP --&gt;|re-plan through MetricFlow| WH[("Warehouse")]
     YML["git: sem_*.yml"] -.-&gt;|dbt parse| FP
     classDef a fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
     classDef b fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
     class QS a;
-    class FP b;</code></pre>
+    class FP b;
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
 </section>
 <section id="pinning-a-stack-that-moves-in-lockstep" class="level2">
 <h2 class="anchored" data-anchor-id="pinning-a-stack-that-moves-in-lockstep">Pinning a stack that moves in lockstep</h2>
@@ -277,7 +291,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>It helps to watch a single request go through, because the whole design is really just this one path, run a few million times.</p>
 <p>An analyst drags Account Balance and Region onto a chart. QuickSight turns that into <code>SELECT "account__region", "account_balance" FROM "daily_balances" GROUP BY 1</code> and sends it over the socket. The server tags it as a data query, not driver chatter. sqlglot parses it. Out come a cube name, a metric, a dimension, and, if the analyst had set the field to Sum in the QuickSight UI, an aggregate wrapper that gets peeled off and discarded, because the aggregation lives in the metric, not the SQL.</p>
 <p>That distilled request goes to the compiler. MetricFlow plans it, renders the semi-additive window as a <code>MAX(balance_date)</code> join, walks the entity graph to reach region from the account, and runs the result in the warehouse. The rows come back in MetricFlow’s own column order, which is not the order the client asked for, so the server re-projects them, wraps them in a <code>RowDescription</code> and <code>DataRow</code> packets and a <code>CommandComplete</code>, and QuickSight draws the chart. End of period balances, two regions, done.</p>
-<pre class="mermaid"><code>sequenceDiagram
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">sequenceDiagram
     participant QS as QuickSight
     participant S as server
     participant P as parser + filters
@@ -291,20 +310,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     C-&gt;&gt;W: optimized warehouse SQL
     W--&gt;&gt;C: rows
     C--&gt;&gt;S: re-project to client order
-    S--&gt;&gt;QS: T + D rows + C</code></pre>
+    S--&gt;&gt;QS: T + D rows + C
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
 <p>Every stage logs a line, <code>pipeline stage 1 of 3</code> and so on, so when something goes wrong I can follow the request from the raw bytes to the plan to the warehouse without guessing. That logging was not vanity. It is how I found the bug in the next section.</p>
 </section>
 <section id="the-proof-i-actually-cared-about" class="level2">
 <h2 class="anchored" data-anchor-id="the-proof-i-actually-cared-about">The proof I actually cared about</h2>
 <p>Here is the test that made me trust the whole thing. It is not a protocol test. It is a numbers test.</p>
 <p>I built a small but real dbt-core 1.11 project. Two accounts, two regions, three months of daily end-of-day balances seeded so the month-end values are round and hand-checkable. Then a semantic model with a semi-additive measure, the classic account-balance case:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">measures</span><span class="kw">:</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> month_end_balance</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">agg</span><span class="kw">:</span><span class="at"> sum</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> eod_balance</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">non_additive_dimension</span><span class="kw">:</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> balance_date</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">window_choice</span><span class="kw">:</span><span class="at"> max</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">measures</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> month_end_balance</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">agg</span><span class="kw">:</span><span class="at"> sum</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> eod_balance</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">non_additive_dimension</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> balance_date</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">window_choice</span><span class="kw">:</span><span class="at"> max</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The <code>non_additive_dimension</code> is the guardrail. It tells MetricFlow that this measure is summable across accounts but not across time. Over a month you want the last daily balance, not the sum of thirty of them.</p>
 <p>I ran the query for real, against DuckDB, through the compiler. Grouped by month and region, <code>account_balance</code> came back as 1500, 1200, 2000 for one region and 4000, 4500, 3000 for the other. Exactly the seeded month-end values. Then I ran a deliberately naive <code>SUM</code> of the same column, and got 31,500 and 154,000 and numbers that are absurd on their face, because they add up daily snapshots that should never be added.</p>
 <p>The two differ by roughly thirty times. That gap is the point. It means the guardrail is load-bearing: a BI tool that emits <code>SUM(eod_balance)</code> produces a materially wrong balance, and FlowProxy refuses to produce it, because the request routes through the metric definition and the metric knows better.</p>
@@ -333,7 +358,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>For a while the runtime ran <code>dbt parse</code> on boot against a mounted project. That is fine for a demo and wrong for a bank, and figuring out why was one of the more useful detours.</p>
 <p>The problem is that parsing needs the whole dbt project and warehouse-DDL credentials, at runtime, in production. That is a lot of blast radius for a service whose only job is to answer SELECTs. And a bad YAML edit does not fail until the proxy boots, which is the worst possible place to find out.</p>
 <p>So I split it. Producing the manifest is a CI job. Consuming it is the runtime. In between sits a versioned, integrity-checked bundle in an artifact store.</p>
-<pre class="mermaid"><code>flowchart LR
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
     GIT["git: sem_*.yml"] --&gt; GATE["CI validate&lt;br/&gt;(offline, plan-only)"]
     GATE --&gt;|blocks broken YAML| STOP(("x"))
     GATE --&gt;|on release| STORE[("ManifestStore&lt;br/&gt;s3 / gs / az / artifactory")]
@@ -344,7 +374,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     classDef c fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
     class GIT,GATE a;
     class STORE b;
-    class PROXY c;</code></pre>
+    class PROXY c;
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
 <p>The CI gate is offline and plan-only. It runs <code>dbt parse</code>, then asks MetricFlow to plan every saved query and every cube, without executing anything, which needs no warehouse credentials at all. If a join path broke, or a dimension was renamed, or a metric was deleted out from under a saved query, the plan fails and the deploy is blocked. On a pull request it validates and stops there. Only on a production release does it publish the bundle. That asymmetry was a deliberate ask, and the GitHub Actions workflow encodes it directly.</p>
 <p>The bundle carries no secrets. It has the semantic manifest, some metadata with a git SHA and a checksum and the validation report, and a profiles template that describes the shape of the warehouse connection but not the credentials. Those get injected at runtime from the secret store, the same way dbt itself resolves env vars in a profile. Credentials never touch git, never touch the bundle, never touch the artifact store.</p>
 <p>The store abstraction is one interface over <code>fsspec</code>, so <code>s3://</code>, <code>gs://</code>, <code>az://</code>, a local file, an Artifactory URL, are all the same code path chosen by a config string. A bank points it at their internal MinIO and nothing in FlowProxy has to change.</p>
