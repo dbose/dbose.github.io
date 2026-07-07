@@ -4,10 +4,27 @@ subtitle: "Research • Notebooks • Papers • Projects"
 categories: [ai, quant, macro, economics, investment, political-economy, evolution, civilisation]
 ---
 
-This site is a working archive — not a feed.
+**I help APRA-regulated risk and data teams build continuous AI assurance tooling** — the pipelines, controls, and observability that make ML and LLM systems auditable under CPG 235 and BCBS 239, not just demoable. I also take on quantitative research and end-to-end AI/ML delivery: from framing the question through to a system running in production.
 
-Everything here is oriented toward **truth-seeking through analysis**:  
+Eighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. CFA Level 1, so the finance is not bolted on. If you have models in production and a regulator who wants evidence they behave — or a research question that deserves a real system behind it — [let's talk](#work-with-me).
+
+---
+
+The rest of this site is a working archive — not a feed. It exists because I think in public.
+
+Everything here is oriented toward **truth-seeking through analysis**:
 quantitative reasoning where possible, first-principles thinking where necessary, and skepticism toward narratives that don’t survive contact with data.
+
+## Work with me
+
+I take on a small number of engagements where the problem is concrete and the stakes are real:
+
+- **AI assurance and model governance** — continuous validation, drift and calibration monitoring, and audit trails that satisfy CPG 235 / BCBS 239 reviewers.
+- **End-to-end AI/ML delivery** — scoping, data, modelling, and deployment, owned through to a system that runs and is maintainable.
+- **Quantitative research** — portfolio analytics, economic time-series, and financial modelling, grounded in CFA Level 1 fundamentals and turned into reproducible systems rather than one-off notebooks.
+- **Data platform modernisation** — DBT, Iceberg, Redshift, and observable pipelines, built so the lineage and controls are first-class, not bolted on.
+
+If that maps to a problem you have, email **[bose.debasish@gmail.com](mailto:bose.debasish@gmail.com)** or read more [about my background](./about.qmd).
 
 ## What you’ll find here
 
