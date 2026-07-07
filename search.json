@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "Deb Bose",
     "section": "",
-    "text": "I help APRA-regulated risk and data teams build continuous AI assurance tooling — the pipelines, controls, and observability that make ML and LLM systems auditable under CPG 235 and BCBS 239, not just demoable. I also take on quantitative research and end-to-end AI/ML delivery: from framing the question through to a system running in production.\nEighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. CFA Level 1, so the finance is not bolted on. If you have models in production and a regulator who wants evidence they behave — or a research question that deserves a real system behind it — let’s talk.\nThe rest of this site is a working archive — not a feed. It exists because I think in public.\nEverything here is oriented toward truth-seeking through analysis: quantitative reasoning where possible, first-principles thinking where necessary, and skepticism toward narratives that don’t survive contact with data."
+    "text": "I help APRA-regulated risk and data teams build continuous AI assurance tooling — the pipelines, controls, and observability that make ML and LLM systems auditable under CPG 235 and BCBS 239, not just demoable. I also take on quantitative research and end-to-end AI/ML delivery: from framing the question through to a system running in production.\nEighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. GARP-certified in Risk and AI (RAI) and CFA Level 1, so neither the assurance nor the finance is bolted on. If you have models in production and a regulator who wants evidence they behave — or a research question that deserves a real system behind it — let’s talk.\nAPRA’s April 2026 letter now expects second-line functions to have tooling to independently assess AI systems. That tooling is what I build.\nThe rest of this site is a working archive — not a feed. It exists because I think in public.\nEverything here is oriented toward truth-seeking through analysis: quantitative reasoning where possible, first-principles thinking where necessary, and skepticism toward narratives that don’t survive contact with data."
   },
   {
     "objectID": "index.html#work-with-me",
@@ -200,28 +200,28 @@
     "href": "about.html",
     "title": "About",
     "section": "",
-    "text": "Data engineer/scientist and quantitative researcher with 18 years building systems that extract signal from noise.\nWhat I do for clients: I help APRA-regulated risk and data teams build continuous AI assurance tooling — the validation pipelines, drift and calibration monitoring, and audit trails that let ML and LLM systems pass a CPG 235 / BCBS 239 review instead of just a demo. I also deliver end-to-end AI/ML projects and quantitative research, the latter grounded in CFA Level 1 finance fundamentals. If any of that is your problem, get in touch.\nMy work spans system engineering, ML, data engineering, portfolio analytics, and economic research—always anchored in first-principles thinking and empirical validation. I don’t chase narratives that don’t survive contact with data."
+    "text": "Data engineer/scientist and quantitative researcher with 18 years building systems that extract signal from noise.\nWhat I do for clients: I help APRA-regulated risk and data teams build continuous AI assurance tooling — the validation pipelines, drift and calibration monitoring, and audit trails that let ML and LLM systems pass a CPG 235 / BCBS 239 review instead of just a demo. I’m a GARP-certified Risk and AI (RAI) practitioner, so the assurance side is a credential, not a claim. I also deliver end-to-end AI/ML projects and quantitative research, the latter grounded in CFA Level 1 fundamentals. If any of that is your problem, get in touch.\nAPRA’s April 2026 letter now expects second-line functions to have tooling to independently assess AI systems. That tooling is what I build.\nMy work spans system engineering, ML, data engineering, portfolio analytics, and economic research—always anchored in first-principles thinking and empirical validation. I don’t chase narratives that don’t survive contact with data."
   },
   {
     "objectID": "about.html#current-work",
     "href": "about.html#current-work",
     "title": "About",
     "section": "Current Work",
-    "text": "Current Work\nData Engineering & Analytics\nLeading data platform modernization at Macquarie Group: DBT/Iceberg/Redshift architectures, data governance through DBT & Collier, and observable data pipelines.\nInvestment Research\nDeveloping quantitative frameworks for portfolio construction and long-term portfolio strategy.\nSystems Thinking\nBuilding graph-based intelligence platforms for venture capital analysis and exploring applications of ML/AI to financial domains."
+    "text": "Current Work\nData Engineering & Analytics\nLeading data platform modernization at Macquarie Group: DBT/Iceberg/Redshift architectures, data governance through DBT & Collibra, and observable data pipelines.\nInvestment Research\nDeveloping quantitative frameworks for portfolio construction and long-term portfolio strategy.\nSystems Thinking\nBuilding graph-based intelligence platforms for venture capital analysis and exploring applications of ML/AI to financial domains."
   },
   {
     "objectID": "about.html#background",
     "href": "about.html#background",
     "title": "About",
     "section": "Background",
-    "text": "Background\nTechnical: Data engineering at scale • DBT, Spark, Redshift, Iceberg • ML/AI (graph networks, probabilistic models) • LLMs & Beyond (JEPA) • Modern development (Python, R, AWS) • Blockchain/decentralized systems\nAnalytical: Quantitative finance • Portfolio analytics • Economic time-series analysis • CFA Level 1 • Data governance (BCBS 239, CPG 235)\nDomain Experience: Financial services • Media/publishing • Healthcare • Renewables/energy • Gaming"
+    "text": "Background\nTechnical: Data engineering at scale • DBT, Spark, Redshift, Iceberg • ML/AI (graph networks, probabilistic models) • LLMs & Beyond (JEPA) • Modern development (Python, R, AWS) • Blockchain/decentralized systems\nAnalytical: Quantitative finance • Portfolio analytics • Economic time-series analysis • GARP Risk and AI (RAI) • CFA Level 1 • Data governance (BCBS 239, CPG 235)\nDomain Experience: Financial services • Media/publishing • Healthcare • Renewables/energy • Gaming"
   },
   {
     "objectID": "about.html#previous-roles",
     "href": "about.html#previous-roles",
     "title": "About",
     "section": "Previous Roles",
-    "text": "Previous Roles\n\nSenior Manager/Lead Engineer at Boson Research Advisory (2023-2025)\nProduct Manager at Hydroverse •\nVarious roles at Sky News, Fairfax Media, Zynga, Oracle, and startups across Sydney, San Francisco, and Bangalore."
+    "text": "Previous Roles\n\nSenior Manager/Lead Engineer at Boson Research Advisory (2023-2025)\nProduct Manager at Hydroverse\nVarious roles at Sky News, Fairfax Media, Zynga, Oracle, and startups across Sydney, San Francisco, and Bangalore."
   },
   {
     "objectID": "about.html#published-work",
