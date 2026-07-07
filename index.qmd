@@ -6,7 +6,9 @@ categories: [ai, quant, macro, economics, investment, political-economy, evoluti
 
 **I help APRA-regulated risk and data teams build continuous AI assurance tooling** — the pipelines, controls, and observability that make ML and LLM systems auditable under CPG 235 and BCBS 239, not just demoable. I also take on quantitative research and end-to-end AI/ML delivery: from framing the question through to a system running in production.
 
-Eighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. CFA Level 1, so the finance is not bolted on. If you have models in production and a regulator who wants evidence they behave — or a research question that deserves a real system behind it — [let's talk](#work-with-me).
+Eighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. [GARP-certified in Risk and AI (RAI)](https://my.garp.org/DigitalBadgeRAI?id=003Po00000vhhe4IAA) and [CFA Level 1](https://credentials.cfainstitute.org/bfdef667-3429-4965-8558-ebaf88125e2a), so neither the assurance nor the finance is bolted on. If you have models in production and a regulator who wants evidence they behave — or a research question that deserves a real system behind it — [let's talk](#work-with-me).
+
+APRA's April 2026 letter now expects second-line functions to have tooling to independently assess AI systems. That tooling is what I build.
 
 ---
 

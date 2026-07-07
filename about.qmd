@@ -4,14 +4,16 @@ title: "About"
 
 Data engineer/scientist and quantitative researcher with 18 years building systems that extract signal from noise.
 
-**What I do for clients:** I help APRA-regulated risk and data teams build continuous AI assurance tooling — the validation pipelines, drift and calibration monitoring, and audit trails that let ML and LLM systems pass a CPG 235 / BCBS 239 review instead of just a demo. I also deliver end-to-end AI/ML projects and quantitative research, the latter grounded in CFA Level 1 finance fundamentals. If any of that is your problem, [get in touch](#work-with-me).
+**What I do for clients:** I help APRA-regulated risk and data teams build continuous AI assurance tooling — the validation pipelines, drift and calibration monitoring, and audit trails that let ML and LLM systems pass a CPG 235 / BCBS 239 review instead of just a demo. I'm a [GARP-certified Risk and AI (RAI)](https://my.garp.org/DigitalBadgeRAI?id=003Po00000vhhe4IAA) practitioner, so the assurance side is a credential, not a claim. I also deliver end-to-end AI/ML projects and quantitative research, the latter grounded in [CFA Level 1](https://credentials.cfainstitute.org/bfdef667-3429-4965-8558-ebaf88125e2a) fundamentals. If any of that is your problem, [get in touch](#work-with-me).
+
+APRA's April 2026 letter now expects second-line functions to have tooling to independently assess AI systems. That tooling is what I build.
 
 My work spans system engineering, ML, data engineering, portfolio analytics, and economic research—always anchored in first-principles thinking and empirical validation. I don't chase narratives that don't survive contact with data.
 
 ## Current Work
 
 **Data Engineering & Analytics**  
-Leading data platform modernization at Macquarie Group: DBT/Iceberg/Redshift architectures, data governance through DBT & Collier, and observable data pipelines.
+Leading data platform modernization at Macquarie Group: DBT/Iceberg/Redshift architectures, data governance through DBT & Collibra, and observable data pipelines.
 
 **Investment Research**  
 Developing quantitative frameworks for portfolio construction and long-term portfolio strategy.
@@ -23,14 +25,14 @@ Building graph-based intelligence platforms for venture capital analysis and exp
 
 **Technical:** Data engineering at scale • DBT, Spark, Redshift, Iceberg • ML/AI (graph networks, probabilistic models) • LLMs & Beyond (JEPA) • Modern development (Python, R, AWS) • Blockchain/decentralized systems
 
-**Analytical:** Quantitative finance • Portfolio analytics • Economic time-series analysis • CFA Level 1 • Data governance (BCBS 239, CPG 235)
+**Analytical:** Quantitative finance • Portfolio analytics • Economic time-series analysis • [GARP Risk and AI (RAI)](https://my.garp.org/DigitalBadgeRAI?id=003Po00000vhhe4IAA) • [CFA Level 1](https://credentials.cfainstitute.org/bfdef667-3429-4965-8558-ebaf88125e2a) • Data governance (BCBS 239, CPG 235)
 
 **Domain Experience:** Financial services • Media/publishing • Healthcare • Renewables/energy • Gaming
 
 ## Previous Roles
 
 - Senior Manager/Lead Engineer at Boson Research Advisory (2023-2025) 
-- Product Manager at Hydroverse •
+- Product Manager at Hydroverse
 - Various roles at Sky News, Fairfax Media, Zynga, Oracle, and startups across Sydney, San Francisco, and Bangalore.
 
 ## Published Work
