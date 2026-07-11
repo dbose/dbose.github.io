@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="D. Bose">
+<meta name="dcterms.date" content="2026-07-11">
+<meta name="description" content="A dbt semantic layer describes tables and compiles to SQL. GraphFlow extends it to describe a knowledge graph too, compiling to Cypher, so one governed contract spans both tabular data and a graph with no second source of truth. Built for DealGraph, an investment-intelligence platform where a single question can span an aggregate, a relationship, and a paragraph of rationale. Covers the cascading router, the extract-once ingestion pattern, the metricflow_entity join contract, a compiler that mirrors MetricFlow for Cypher, and an end-to-end trace with real code.">
+
+<title>One semantic contract, three stores: routing metrics, graphs, and documents without letting an LLM write SQL – Deb Bose</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-637a8987fd156daea465eecdbde71ac9.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Deb Bose</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../posts/"> 
+<span class="menu-text">Articles</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../notebooks/index.html"> 
+<span class="menu-text">Notebooks</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../papers/index.html"> 
+<span class="menu-text">Papers</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/dbose"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-problem-dealgraph-is-actually-trying-to-solve" id="toc-the-problem-dealgraph-is-actually-trying-to-solve" class="nav-link active" data-scroll-target="#the-problem-dealgraph-is-actually-trying-to-solve">The problem DealGraph is actually trying to solve</a></li>
+  <li><a href="#the-cascade-and-why-the-cheapest-layer-that-can-answer-should-win" id="toc-the-cascade-and-why-the-cheapest-layer-that-can-answer-should-win" class="nav-link" data-scroll-target="#the-cascade-and-why-the-cheapest-layer-that-can-answer-should-win">The cascade, and why the cheapest layer that can answer should win</a></li>
+  <li><a href="#the-semantic-layer-is-the-router-not-a-lookup-table" id="toc-the-semantic-layer-is-the-router-not-a-lookup-table" class="nav-link" data-scroll-target="#the-semantic-layer-is-the-router-not-a-lookup-table">The semantic layer is the router, not a lookup table</a></li>
+  <li><a href="#one-semantic-layer-two-paradigms-tables-and-a-graph" id="toc-one-semantic-layer-two-paradigms-tables-and-a-graph" class="nav-link" data-scroll-target="#one-semantic-layer-two-paradigms-tables-and-a-graph">One semantic layer, two paradigms: tables and a graph</a></li>
+  <li><a href="#the-join-contract-which-is-the-quiet-centerpiece" id="toc-the-join-contract-which-is-the-quiet-centerpiece" class="nav-link" data-scroll-target="#the-join-contract-which-is-the-quiet-centerpiece">The join contract, which is the quiet centerpiece</a></li>
+  <li><a href="#the-compiler-which-mirrors-metricflow-one-level-simpler" id="toc-the-compiler-which-mirrors-metricflow-one-level-simpler" class="nav-link" data-scroll-target="#the-compiler-which-mirrors-metricflow-one-level-simpler">The compiler, which mirrors MetricFlow one level simpler</a></li>
+  <li><a href="#watching-one-question-go-all-the-way-through" id="toc-watching-one-question-go-all-the-way-through" class="nav-link" data-scroll-target="#watching-one-question-go-all-the-way-through">Watching one question go all the way through</a></li>
+  <li><a href="#extract-once-query-forever" id="toc-extract-once-query-forever" class="nav-link" data-scroll-target="#extract-once-query-forever">Extract once, query forever</a></li>
+  <li><a href="#a-note-on-where-the-documents-actually-live" id="toc-a-note-on-where-the-documents-actually-live" class="nav-link" data-scroll-target="#a-note-on-where-the-documents-actually-live">A note on where the documents actually live</a></li>
+  <li><a href="#why-any-of-this-beats-pointing-an-agent-at-the-problem" id="toc-why-any-of-this-beats-pointing-an-agent-at-the-problem" class="nav-link" data-scroll-target="#why-any-of-this-beats-pointing-an-agent-at-the-problem">Why any of this beats pointing an agent at the problem</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">One semantic contract, three stores: routing metrics, graphs, and documents without letting an LLM write SQL</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">Data Engineering</div>
+    <div class="quarto-category">Semantic Layer</div>
+    <div class="quarto-category">MetricFlow</div>
+    <div class="quarto-category">Knowledge Graph</div>
+    <div class="quarto-category">Neo4j</div>
+    <div class="quarto-category">LLMs</div>
+    <div class="quarto-category">RAG</div>
+    <div class="quarto-category">MCP</div>
+    <div class="quarto-category">Architecture</div>
+    <div class="quarto-category">AWS</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    A dbt semantic layer describes tables and compiles to SQL. GraphFlow extends it to describe a knowledge graph too, compiling to Cypher, so one governed contract spans both tabular data and a graph with no second source of truth. Built for DealGraph, an investment-intelligence platform where a single question can span an aggregate, a relationship, and a paragraph of rationale. Covers the cascading router, the extract-once ingestion pattern, the metricflow_entity join contract, a compiler that mirrors MetricFlow for Cypher, and an end-to-end trace with real code.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>D. Bose </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">July 11, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>A little while ago I wrote about <a href="https://dbose.github.io/posts/flowproxy.html">FlowProxy</a>, a proxy that lets a BI tool query a dbt semantic layer over the PostgreSQL wire protocol, so an analyst gets a governed metric instead of a hand-rolled one. The lesson underneath it was small and stubborn: define the meaning of a metric once, and force every consumer through that definition. A tool that wraps your balance in SUM cannot change what the balance means, because the query is rebuilt from the metric name, not executed as sent.</p>
+<p>This is the same idea, pushed somewhere harder. What happens when the question is not a metric at all.</p>
+<section id="the-problem-dealgraph-is-actually-trying-to-solve" class="level2">
+<h2 class="anchored" data-anchor-id="the-problem-dealgraph-is-actually-trying-to-solve">The problem DealGraph is actually trying to solve</h2>
+<p>DealGraph is an investment-intelligence platform. It ingests the unstructured exhaust of a venture firm: deal memos, investor profiles, board packs, market reports. Then people ask it questions. And the questions do not respect the tidy boundary between a database and a document.</p>
+<p>Consider three real ones. They look alike in the question box and could not be more different behind it.</p>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>“How much has Sequoia deployed in fintech this year?” - a metric
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A sum over a filtered set of rows, the kind of thing MetricFlow was built for. Answered by <strong>Postgres</strong> via the semantic layer’s metric definitions.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>“Which investors co-led Series B rounds with Sequoia?” - not a metric
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A shape in a graph: a walk from one investor through shared deals to other investors. No amount of <code>GROUP BY</code> answers it cleanly. Answered by <strong>Neo4j</strong> via a named relation.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>“Why did the partnership pass on that round?” - neither
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The answer lives in a paragraph of a memo, in tone and rationale. Only a document store with retrieval can surface it. Answered by the <strong>knowledge base</strong> via RAG.</p>
+</div>
+</div>
+<p>One product, one question box, and three fundamentally different retrieval systems behind it. A metric store, a graph, and a pile of documents. The naive move is to point a big agent at all three and let it figure things out per query. That works, and it is slow and expensive and unsafe, and I will come back to why.</p>
+<p>The move that actually works is to decide, up front, in a spec, what each store is allowed to answer and how. To make the semantic layer the thing that routes. That is the whole article.</p>
+</section>
+<section id="the-cascade-and-why-the-cheapest-layer-that-can-answer-should-win" class="level2">
+<h2 class="anchored" data-anchor-id="the-cascade-and-why-the-cheapest-layer-that-can-answer-should-win">The cascade, and why the cheapest layer that can answer should win</h2>
+<p>Here is the query-time architecture. Read it top to bottom: a question falls through layers, and the cheapest one that can answer it stops the fall.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/router_architecture.svg" class="img-fluid figure-img"></p>
+<figcaption>The cascading router and extract-once pattern: a query falls through a semantic cache, an intent classifier that routes against the semantic layer to Postgres, Neo4j, or a knowledge base, and escalates to a planner only for genuine multi-hop questions. Ingestion extracts facts once into a canonical Silver table that projects into each store.</figcaption>
+</figure>
+</div>
+<p>The first thing to notice is that most queries never reach the expensive machinery. A semantic cache sits in front, embedding the question and matching it against past answers, with a time-to-live tied to how fresh the underlying data needs to be. When that misses, a small, cheap classifier decides what kind of question this is, and hands it to exactly one store. Only the genuinely hard questions, the ones that need to chain a graph walk into a SQL enrichment into a document lookup, escalate to a planner that costs real money.</p>
+<p>The economics are the point. A naive agent hits five to ten LLM calls per query and costs somewhere between five and twenty-five cents. The cascade answers thirty percent from cache at no cost, sends sixty percent through one cheap classification and one templated query at a fraction of a cent, and reserves the five-cent planner for the ten percent that truly need it. Same answers, roughly an order of magnitude less spend. You do not save money by making the model cheaper. You save it by not calling the model when a template will do.</p>
+<p>But none of that cascade works without the part that makes it safe, and that part is the semantic layer.</p>
+</section>
+<section id="the-semantic-layer-is-the-router-not-a-lookup-table" class="level2">
+<h2 class="anchored" data-anchor-id="the-semantic-layer-is-the-router-not-a-lookup-table">The semantic layer is the router, not a lookup table</h2>
+<p>The classifier’s job sounds simple and is easy to get catastrophically wrong. Given a question, pick which store answers it. The wrong way to do this is to hand the LLM the raw database schemas and ask it to write the query. That is how you get hallucinated column names, freehand SQL against tables the model half-remembers, and an injection surface with a chat interface in front of it.</p>
+<p>The right way is to never let the model write a query at all. The model gets a catalog of named things, and it picks one and fills the blanks. Everything downstream of that choice is deterministic code.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TB
+    Q["User question&lt;br/&gt;natural language"] --&gt; LLM
+
+    subgraph menu["What the LLM is allowed to do: pick from a menu"]
+        direction TB
+        LLM["Intent classifier (Haiku)&lt;br/&gt;sees only the routing card"]
+        LLM --&gt;|"names one item + fills its slots"| PICK["JSON: intent + target + params + filters"]
+    end
+
+    SL[("Semantic layer&lt;br/&gt;metrics.yml + relations.yml")] -.-&gt;|"generates the menu (~50 tokens)"| LLM
+
+    PICK --&gt; COMP{"Compiler&lt;br/&gt;deterministic, CI-validated"}
+    COMP --&gt;|"METRIC to MetricFlow"| SQL["Parameterized SQL"]
+    COMP --&gt;|"RELATIONSHIP to graphflow"| CY["Parameterized Cypher"]
+    COMP --&gt;|"DOCUMENT"| KB["KB retrieval call"]
+
+    SQL --&gt; PG[("Postgres")]
+    CY --&gt; NEO[("Neo4j")]
+    KB --&gt; BKB[("Bedrock KB")]
+
+    classDef q fill:#232f47,stroke:#38455f,color:#eef2f8;
+    classDef ai fill:#2a2418,stroke:#c78a2e,color:#e0a852;
+    classDef sl fill:#1d2740,stroke:#44546f,color:#eef2f8;
+    classDef comp fill:#1a2a22,stroke:#5c9d78,color:#86c79a;
+    classDef store fill:#212a3d,stroke:#38455f,color:#c8d2e2;
+    class Q q;
+    class LLM,PICK ai;
+    class SL sl;
+    class COMP,SQL,CY,KB comp;
+    class PG,NEO,BKB store;
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>The dashed line is the whole idea. The semantic layer generates the menu; the model may only choose from it. The model never touches the solid path that produces SQL or Cypher. That path is deterministic, validated code, and it is the only thing that ever writes a query.</p>
+<p>That catalog is generated from the semantic layer. Here is the function that builds it, straight from the compiler:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> routing_card(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    lines <span class="op">=</span> [<span class="st">"METRICS (Postgres via MetricFlow):"</span>]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> m <span class="kw">in</span> <span class="va">self</span>.metrics.values():</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        lines.append(<span class="ss">f"  - </span><span class="sc">{</span>m[<span class="st">'name'</span>]<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>m<span class="sc">.</span>get(<span class="st">'description'</span>,<span class="st">''</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    lines.append(<span class="st">"RELATIONS (Neo4j via graphflow):"</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> r <span class="kw">in</span> <span class="va">self</span>.relations.values():</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        ps <span class="op">=</span> <span class="st">", "</span>.join(p[<span class="st">"name"</span>] <span class="cf">for</span> p <span class="kw">in</span> r.get(<span class="st">"params"</span>, []))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        fs <span class="op">=</span> <span class="st">", "</span>.join(f[<span class="st">"name"</span>] <span class="cf">for</span> f <span class="kw">in</span> r.get(<span class="st">"filters"</span>, []))</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        lines.append(<span class="ss">f"  - </span><span class="sc">{</span>r[<span class="st">'name'</span>]<span class="sc">}</span><span class="ss">(</span><span class="sc">{</span>ps<span class="sc">}</span><span class="ss">) [filters: </span><span class="sc">{</span>fs<span class="sc">}</span><span class="ss">]: "</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>                     <span class="ss">f"</span><span class="sc">{</span><span class="st">' '</span><span class="sc">.</span>join(<span class="bu">str</span>(r.get(<span class="st">'description'</span>,<span class="st">''</span>)).split())<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    lines.append(<span class="st">"DOCUMENTS (Bedrock KB): rationale, quotes, memo content, anything narrative."</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>.join(lines)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>That is the entire context the classifier sees. A list of named metrics, a list of named relations with their parameters and allowed filters, and a one-line note that documents cover the narrative long tail. Around fifty tokens of routing context. The model reads it and returns a small JSON object naming exactly one target and its slots. It does not know the table names. It cannot know them. It picks a metric called <code>total_invested</code> or a relation called <code>co_invested_with</code>, and the platform does the rest.</p>
+<p>The classifier’s contract is spelled out in its system prompt, and the last rule is the one that matters most:</p>
+<pre><code>- If confidence &lt; 0.7, use MULTI_HOP (the planner will handle it).
+- Never invent metric, relation, param, or filter names not in the catalog.</code></pre>
+<p>When the model is unsure, it does not guess. It escalates. And it is structurally prevented from naming anything that is not in the spec, because there is nothing else in its context to name.</p>
+</section>
+<section id="one-semantic-layer-two-paradigms-tables-and-a-graph" class="level2">
+<h2 class="anchored" data-anchor-id="one-semantic-layer-two-paradigms-tables-and-a-graph">One semantic layer, two paradigms: tables and a graph</h2>
+<p>Here is the part I think is genuinely new, so let me say it plainly rather than leave it implicit.</p>
+<div class="callout callout-style-default callout-important no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>A single semantic contract spanning tabular data and a knowledge graph
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A dbt semantic layer describes tables: entities, dimensions, measures, metrics, all compiled to SQL. It has never described a graph. <strong>GraphFlow is the extension that makes it do both.</strong> The same manifest, in the same dialect, now defines named metrics that compile to SQL <em>and</em> named relations that compile to Cypher, bound together by a shared entity contract. One governed vocabulary, two query paradigms, no second source of truth. The tabular semantic layer you already run, extended to answer graph questions it structurally could not answer before.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>GraphFlow is a real, installable project
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Everything this article walks through as a pattern now exists as code at <a href="https://github.com/dbose/graphflow">github.com/dbose/graphflow</a>. The snippets below are the Python reference that shaped the design; the shipped compiler is a single Rust crate that preserves its exact semantics, with the three guarantees locked in by golden tests and a PyO3 wheel so <code>pip install graphflow</code> needs no Rust toolchain. It validates <code>relations.yml</code> against MetricFlow or against an Open Semantic Interchange model (<code>--target-standard osi</code>, the spec now incubating as Apache Ossie), and it can export the whole graph spec as an OSI document, relations travelling in <code>custom_extensions</code>. Thirty-one tests. Apache-2.0.</p>
+</div>
+</div>
+<p>The metrics half is just dbt. The <code>metrics.yml</code> is a standard MetricFlow spec, unchanged, and it compiles through <code>dbt sl</code> exactly as it always did. Investors, companies, deals as entities; total invested, deal count, average check size as metrics. Nothing exotic. That is the tabular half, and GraphFlow does not touch it.</p>
+<p>The interesting file is the sibling, <code>relations.yml</code>, which teaches the semantic layer about graph shapes using the same dialect and a new grammar. This is a co-invested-with relation, one of three in the demo spec:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">relations</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> co_invested_with</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> Investors who participated in at least one shared deal with the anchor investor</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">from_entity</span><span class="kw">:</span><span class="at"> investor</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">to_entity</span><span class="kw">:</span><span class="at"> investor</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">params</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> anchor_investor</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">entity</span><span class="kw">:</span><span class="at"> investor</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">filters</span><span class="kw">:</span><span class="co">                            # optional, whitelisted</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> round_type</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">maps_to</span><span class="kw">:</span><span class="at"> d.round_type</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sector</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">maps_to</span><span class="kw">:</span><span class="at"> c.sector</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> since_date</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">maps_to</span><span class="kw">:</span><span class="at"> d.deal_date</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">"&gt;="</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">returns</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">b.name AS co_investor</span><span class="kw">,</span><span class="at"> count(d) AS shared_deals</span><span class="kw">]</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="fu">    template</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>      MATCH (a:Investor)-[:PARTICIPATED]-&gt;(d:Deal)&lt;-[:PARTICIPATED]-(b:Investor)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      MATCH (d)-[:FUNDED]-&gt;(c:Company)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>      WHERE a.name = $anchor_investor AND a &lt;&gt; b</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>      {filters}</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>      RETURN b.name AS co_investor, b.id AS investor_id, count(d) AS shared_deals</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>      ORDER BY shared_deals DESC</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>      LIMIT $limit</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Read what this actually is. A named relation, its required parameters, a whitelist of filters that may be applied and nothing else, a declared return shape, and a Cypher template with two holes in it: the <code>{filters}</code> slot and the <code>$parameters</code>. The analyst who authors this decides, once, exactly which questions this relation can answer and exactly which knobs a caller may turn. Everything else is closed.</p>
+</section>
+<section id="the-join-contract-which-is-the-quiet-centerpiece" class="level2">
+<h2 class="anchored" data-anchor-id="the-join-contract-which-is-the-quiet-centerpiece">The join contract, which is the quiet centerpiece</h2>
+<p>There is one line in <code>relations.yml</code> that does more work than any other, and it is easy to miss:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">graph_entities</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> investor</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metricflow_entity</span><span class="kw">:</span><span class="at"> investor</span><span class="co">        # &lt;- the join contract</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">node_label</span><span class="kw">:</span><span class="at"> Investor</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">key</span><span class="kw">:</span><span class="at"> id</span><span class="co">                            # Neo4j property == silver investor_id</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">display</span><span class="kw">:</span><span class="at"> name</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Every graph entity must bind to a MetricFlow entity by name. That <code>metricflow_entity: investor</code> is a contract, and it is checkable in CI. It says: the <code>id</code> on a Neo4j Investor node is the same identity as the <code>investor_id</code> MetricFlow groups by in Postgres. Which means a result that comes out of the graph, carrying investor IDs, can turn around and join straight onto SQL metrics without anyone writing a join by hand.</p>
+<p>This is what lets a single answer be half graph and half metric. The graph tells you who co-invested. The shared key lets you then ask, for those exact investors, how much did they deploy in fintech, and get the number from MetricFlow. Structure from Neo4j, quantities from Postgres, stitched on a key that a spec guarantees is aligned. Not glued together at query time by a hopeful LLM. Contracted at author time and enforced at compile time.</p>
+</section>
+<section id="the-compiler-which-mirrors-metricflow-one-level-simpler" class="level2">
+<h2 class="anchored" data-anchor-id="the-compiler-which-mirrors-metricflow-one-level-simpler">The compiler, which mirrors MetricFlow one level simpler</h2>
+<p>MetricFlow compiles <code>metrics.yml</code> into optimized SQL. The <a href="https://github.com/dbose/graphflow">GraphFlow</a> compiler compiles <code>relations.yml</code> into parameterized Cypher, and it makes three guarantees, stated in its own docstring:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""graphflow/compiler.py</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">Compiles relations.yml -&gt; parameterized Cypher.</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">Mirrors what MetricFlow does for metrics.yml -&gt; SQL, one level simpler.</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">Guarantees:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">  1. Entity alignment: every graph_entity binds to a MetricFlow entity (CI-checkable).</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">  2. Filter whitelisting: only filters declared in the spec can ever be rendered.</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">  3. Parameterization: all values go through Cypher $params. Zero string interpolation</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">     of user values -&gt; zero injection surface, deterministic golden-testable output.</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Those three guarantees are the same guarantees FlowProxy makes for a BI tool’s SQL, transplanted to a graph. The validation runs in CI and refuses to start if a graph entity binds to an entity MetricFlow has never heard of, or if a template forgets its filter slot, or if a filter declares an operator that is not on the allowed list:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate(<span class="va">self</span>):</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    mf_entities <span class="op">=</span> <span class="bu">set</span>()</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> sm <span class="kw">in</span> <span class="va">self</span>.metrics_spec[<span class="st">"semantic_models"</span>]:</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        mf_entities <span class="op">|=</span> {e[<span class="st">"name"</span>] <span class="cf">for</span> e <span class="kw">in</span> sm[<span class="st">"entities"</span>]}</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name, ge <span class="kw">in</span> <span class="va">self</span>.graph_entities.items():</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        bound <span class="op">=</span> ge.get(<span class="st">"metricflow_entity"</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> bound <span class="kw">not</span> <span class="kw">in</span> mf_entities:</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"graph_entity '</span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">' binds to unknown MetricFlow entity "</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"'</span><span class="sc">{</span>bound<span class="sc">}</span><span class="ss">'. Known: </span><span class="sc">{</span><span class="bu">sorted</span>(mf_entities)<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>            )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>And the compilation itself is where the injection surface disappears. A caller passes filter values, but the compiler only renders filters that were declared in the spec, and every value becomes a Cypher parameter rather than a spliced string:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>declared <span class="op">=</span> {f[<span class="st">"name"</span>]: f <span class="cf">for</span> f <span class="kw">in</span> rel.get(<span class="st">"filters"</span>, [])}</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>fragments, bound <span class="op">=</span> [], {}</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> fname, fval <span class="kw">in</span> filters.items():</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> fname <span class="kw">not</span> <span class="kw">in</span> declared:</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"relation '</span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">': filter '</span><span class="sc">{</span>fname<span class="sc">}</span><span class="ss">' not declared in spec "</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"(allowed: </span><span class="sc">{</span><span class="bu">sorted</span>(declared)<span class="sc">}</span><span class="ss">)"</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    spec <span class="op">=</span> declared[fname]</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    op <span class="op">=</span> spec.get(<span class="st">"operator"</span>, <span class="st">"="</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    fragments.append(<span class="ss">f"AND </span><span class="sc">{</span>spec[<span class="st">'maps_to'</span>]<span class="sc">}</span><span class="ss"> </span><span class="sc">{</span>op<span class="sc">}</span><span class="ss"> $f_</span><span class="sc">{</span>fname<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    bound[<span class="ss">f"f_</span><span class="sc">{</span>fname<span class="sc">}</span><span class="ss">"</span>] <span class="op">=</span> fval</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>An undeclared filter is not sanitized. It is rejected. There is no code path that renders a user value into the query as text, so there is no code path to exploit.</p>
+</section>
+<section id="watching-one-question-go-all-the-way-through" class="level2">
+<h2 class="anchored" data-anchor-id="watching-one-question-go-all-the-way-through">Watching one question go all the way through</h2>
+<p>The demo traces a question that needs everything: “Which of Sequoia’s co-investors led fintech Series B rounds.” It is a graph walk, then a filter, then a join back to metrics.</p>
+<p>The classifier sees the routing card and returns this, which is what Haiku actually produces for this catalog at temperature zero:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"intent"</span><span class="fu">:</span> <span class="st">"RELATIONSHIP"</span><span class="fu">,</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"target"</span><span class="fu">:</span> <span class="st">"co_investors_who_led"</span><span class="fu">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"params"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"anchor_investor"</span><span class="fu">:</span> <span class="st">"Sequoia Capital"</span><span class="fu">},</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"filters"</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">"round_type"</span><span class="fu">:</span> <span class="st">"Series B"</span><span class="fu">,</span> <span class="dt">"sector"</span><span class="fu">:</span> <span class="st">"fintech"</span><span class="fu">},</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"confidence"</span><span class="fu">:</span> <span class="fl">0.93</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>It picked a pre-authored composition, <code>co_investors_who_led</code>, which chains the co-investment walk into a led-round walk. This is the known multi-hop, encoded once as a relation so it never has to hit the expensive planner. The dispatcher compiles it to Cypher, with the filters rendered into the slot and every value bound as a parameter:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> kind <span class="op">==</span> <span class="st">"RELATIONSHIP"</span>:</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    q <span class="op">=</span> manifest.compile_relation(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>        intent[<span class="st">"target"</span>], intent.get(<span class="st">"params"</span>, {}), intent.get(<span class="st">"filters"</span>, {})</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"engine"</span>: <span class="st">"neo4j"</span>, <span class="st">"plan"</span>: q.cypher, <span class="st">"params"</span>: q.params}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Neo4j returns co-investors and, crucially, their <code>investor_id</code> values. Then the enrichment step uses that shared key to go back to MetricFlow for the money:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>enrich <span class="op">=</span> {</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"intent"</span>: <span class="st">"METRIC"</span>, <span class="st">"target"</span>: <span class="st">"total_invested"</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"group_by"</span>: [<span class="st">"investor__investor_id"</span>],</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"filters"</span>: {<span class="st">"sector"</span>: <span class="st">"fintech"</span>},</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Because <code>graph_entity.investor</code> binds to MetricFlow entity <code>investor</code>, the <code>inv_0042</code> that came out of the graph joins straight onto <code>total_invested</code> from Postgres. The final answer is graph structure plus SQL metrics, stitched on one contracted key. And when the demo tries to sneak in a filter that was never declared:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>manifest.compile_relation(<span class="st">"led_round"</span>, {<span class="st">"investor"</span>: <span class="st">"Sequoia Capital"</span>},</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>                          {<span class="st">"valuation"</span>: <span class="st">"&gt; 1B"</span>})   <span class="co"># not in spec</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># REJECTED: relation 'led_round': filter 'valuation' not declared in spec</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>it is rejected at compile time. The guardrail is not advice. It is a wall.</p>
+</section>
+<section id="extract-once-query-forever" class="level2">
+<h2 class="anchored" data-anchor-id="extract-once-query-forever">Extract once, query forever</h2>
+<p>There is a second pattern in that architecture diagram, running along the bottom, and it is what makes the graph and the metrics exist at all. The documents arrive unstructured. A one-time LLM extraction pass reads each one and pulls out typed facts: this investor led this round for this amount on this date, with provenance back to the page it came from. Those facts become graph edges and metric rows. The narrative residue, the tone and the rationale that does not reduce to a fact, stays in the document store for retrieval.</p>
+<p>The token spend happens once, at ingestion, not on every query. You pay to read a memo the day it lands, and then you query the facts it contained for free, forever, in whichever shape the question wants. A naive RAG system re-reads the same documents on every question and pays every time. This one reads them once and projects them into the store best suited to answer.</p>
+<p>And it is not duplication. There is one canonical, entity-resolved truth in a Delta Lake Silver table, and the Postgres and Neo4j copies are read models projected from it, rebuildable at any time. Same facts, two shapes, one source. It is CQRS, not copy-paste.</p>
+</section>
+<section id="a-note-on-where-the-documents-actually-live" class="level2">
+<h2 class="anchored" data-anchor-id="a-note-on-where-the-documents-actually-live">A note on where the documents actually live</h2>
+<p>Because people always ask, here is the retrieval half drawn out. The knowledge base is a manager, not a database. It chunks documents, embeds them, and decides what to retrieve, but it holds no vectors itself. The vectors live in a separate store, wired in through a configuration block.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/kb_opensearch.svg" class="img-fluid figure-img"></p>
+<figcaption>Bedrock Knowledge Base with OpenSearch: on the write path the KB chunks documents, Titan embeds them, and the vectors are written to an OpenSearch index. On the read path a question is embedded with the same model, OpenSearch finds the nearest vectors, and Claude answers grounded only in the retrieved chunks.</figcaption>
+</figure>
+</div>
+<p>The single thing worth remembering is that the storage block is just wiring. Swap OpenSearch for Pinecone or Aurora pgvector and the flow is identical. The knowledge base orchestrates; the vector store stores and searches. Keeping those two roles distinct in your head is most of understanding it.</p>
+</section>
+<section id="why-any-of-this-beats-pointing-an-agent-at-the-problem" class="level2">
+<h2 class="anchored" data-anchor-id="why-any-of-this-beats-pointing-an-agent-at-the-problem">Why any of this beats pointing an agent at the problem</h2>
+<p>The honest alternative to all of this is a capable agent with tool access, pointed at Postgres and Neo4j and the knowledge base, left to reason its way to an answer per query. It works. I want to be fair to it, because for a genuinely novel multi-hop question, it is exactly what the L2 planner in this design falls back to.</p>
+<p>The problem is using it for everything. It is slow, because every question becomes a multi-step reasoning loop. It is expensive, because every step is a model call. And it is unsafe in the way that matters most for a platform serving real analysts, because an agent writing its own SQL and Cypher will, eventually, on some query you did not test, name a column that does not exist or filter on a field it should not, and do it with total confidence.</p>
+<p>The semantic contract removes that entire failure class. The model never writes a query. It picks a named thing from a catalog it cannot deviate from, and a compiler that has been validated in CI turns that choice into a parameterized query with a fixed shape. The cheap path is safe because it is closed. The expensive path exists for exactly the questions that need openness, and only those.</p>
+<p>The difference is where the language model’s output lands. In the freehand approach it lands directly in the query, which is the blast radius. In the governed approach it lands in a name, and a compiler stands between that name and the query.</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart LR
+    subgraph free["Freehand: the model writes the query"]
+        direction TB
+        FQ["Question"] --&gt; FLLM["LLM sees raw schemas"]
+        FLLM --&gt;|"emits SQL / Cypher text"| FEXEC[["Executed as sent"]]
+        FEXEC --&gt; FRISK["Hallucinated columns&lt;br/&gt;injection surface&lt;br/&gt;silent wrong answers"]
+    end
+
+    subgraph gov["Governed: the model picks a name"]
+        direction TB
+        GQ["Question"] --&gt; GLLM["LLM sees the named catalog"]
+        GLLM --&gt;|"emits a name + slots"| GCOMP{"Compiler&lt;br/&gt;whitelist + params + CI"}
+        GCOMP --&gt; GSAFE["Fixed query shape&lt;br/&gt;no injection surface&lt;br/&gt;undeclared filter rejected"]
+    end
+
+    classDef bad fill:#2a1a1a,stroke:#b45454,color:#e8b0b0;
+    classDef good fill:#1a2a22,stroke:#5c9d78,color:#86c79a;
+    classDef n fill:#232f47,stroke:#38455f,color:#eef2f8;
+    class FQ,GQ n;
+    class FLLM,FEXEC,FRISK bad;
+    class GLLM,GCOMP,GSAFE good;
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>The model is equally capable in both. The only thing that changed is whether its output is a query or a choice. A wrong choice is a bad row you can log and cap; a wrong query is an incident.</p>
+<p>It is the same trade FlowProxy makes for a BI tool, extended across three stores. Decide the meaning once, in a spec. Compile it, do not interpret it. Let the model choose from the menu, never write the recipe. The guardrails live in one place, in YAML, in git, and nothing that queries the platform can get around them, because there is no path that does not go through the compiler.</p>
+<p>That is the pattern. One semantic contract stretched over two paradigms, tabular and graph, with documents on the side; three stores under a single governed vocabulary; a cascade that spends tokens where they earn their keep; and an ingestion step that pays the extraction cost once. The metrics half is dbt you already know. The graph half is a hundred lines that borrow its discipline and teach the semantic layer to answer questions it could not reach before. The rest is refusing, everywhere, to let a language model improvise against your data.</p>
+<div class="callout callout-style-default callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>The code
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The reference implementation from this article grew into a full project: <a href="https://github.com/dbose/graphflow">GraphFlow</a>. Rust compiler core, PyO3 bindings, a CLI (<code>graphflow validate | compile | export | routing-card</code>), executors for Neo4j and MetricFlow, and both binding standards, dbt MetricFlow by default and Open Semantic Interchange via <code>--target-standard osi</code>. FlowProxy, the tabular sibling this article opened with, lives at <a href="https://github.com/dbose/flowproxy">github.com/dbose/flowproxy</a>.</p>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/dbose\.github\.io");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

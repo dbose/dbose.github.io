@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1660" font-family="'Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <marker id="arw" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
+      <path d="M2,2 L9,6 L2,10" fill="none" stroke="#6f7f9c" stroke-width="1.8"/>
+    </marker>
+    <marker id="arwG" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
+      <path d="M2,2 L9,6 L2,10" fill="none" stroke="#5c9d78" stroke-width="1.8"/>
+    </marker>
+    <style>
+      .mono{font-family:'SFMono-Regular',Consolas,Menlo,monospace;}
+      .btitle{font-weight:700;font-size:17px;}
+      .sub{font-size:12.5px;fill:#93a0b8;}
+      .code{font-size:11.5px;fill:#9fd0ac;}
+      .lane{font-size:13px;font-weight:700;letter-spacing:2px;fill:#6b7a94;}
+      .cost{font-size:11.5px;fill:#e0a852;}
+    </style>
+  </defs>
+
+  <rect width="800" height="1660" fill="#171f2e"/>
+
+  <text x="400" y="44" text-anchor="middle" fill="#eef2f8" font-size="23" font-weight="700">The Cascading Router + Extract-Once Pattern</text>
+  <text x="400" y="70" text-anchor="middle" fill="#93a0b8" font-size="13.5">Cheapest layer that can answer, wins. Tokens spent at ingestion, not per query.</text>
+
+  <!-- ============ QUERY-TIME CASCADE ============ -->
+  <line x1="60" y1="102" x2="180" y2="102" stroke="#38455f" stroke-width="1"/>
+  <text x="192" y="107" class="lane">QUERY TIME — THE CASCADE</text>
+
+  <!-- Query -->
+  <rect x="150" y="124" width="500" height="56" rx="9" fill="#232f47" stroke="#38455f" stroke-width="1.4"/>
+  <text x="172" y="150" fill="#eef2f8" class="btitle">User query</text>
+  <text x="172" y="170" class="sub">"Which of Sequoia's co-investors led fintech Series B rounds?"</text>
+
+  <line x1="400" y1="180" x2="400" y2="206" stroke="#6f7f9c" stroke-width="1.6" marker-end="url(#arw)"/>
+
+  <!-- L0 -->
+  <rect x="150" y="208" width="500" height="62" rx="9" fill="#1a2a22" stroke="#5c9d78" stroke-width="1.5"/>
+  <text x="172" y="234" fill="#86c79a" class="btitle">L0 — Semantic cache</text>
+  <text x="172" y="254" class="sub">embed query, cosine-match past answers · TTL by data freshness</text>
+  <text x="628" y="244" text-anchor="end" class="cost mono">~$0 · hit rate 20-40%</text>
+
+  <line x1="400" y1="270" x2="400" y2="296" stroke="#6f7f9c" stroke-width="1.6" marker-end="url(#arw)"/>
+  <text x="412" y="288" fill="#6f7f9c" font-size="11.5" class="mono">miss</text>
+
+  <!-- L1 -->
+  <rect x="150" y="298" width="500" height="76" rx="9" fill="#2a2418" stroke="#c78a2e" stroke-width="1.5"/>
+  <text x="172" y="324" fill="#e0a852" class="btitle">L1 — Intent classifier (Haiku)</text>
+  <text x="172" y="344" class="sub">classifies against the SEMANTIC LAYER manifest, not raw schemas:</text>
+  <text x="172" y="362" class="code mono">METRIC | RELATIONSHIP | DOCUMENT | MULTI_HOP</text>
+  <text x="628" y="334" text-anchor="end" class="cost mono">~$0.0002/query</text>
+
+  <!-- three-way split -->
+  <line x1="255" y1="374" x2="255" y2="412" stroke="#6f7f9c" stroke-width="1.6" marker-end="url(#arw)"/>
+  <line x1="400" y1="374" x2="400" y2="412" stroke="#6f7f9c" stroke-width="1.6" marker-end="url(#arw)"/>
+  <line x1="545" y1="374" x2="545" y2="412" stroke="#6f7f9c" stroke-width="1.6" marker-end="url(#arw)"/>
+
+  <!-- three stores -->
+  <rect x="150" y="414" width="200" height="108" rx="9" fill="#232f47" stroke="#38455f" stroke-width="1.4"/>
+  <text x="168" y="440" fill="#eef2f8" class="btitle" font-size="15">Postgres</text>
+  <text x="168" y="460" class="sub" font-size="11.5">METRIC intent</text>
+  <text x="168" y="478" class="sub" font-size="11.5">aggregates, rankings,</text>
+  <text x="168" y="494" class="sub" font-size="11.5">time series, filters</text>
+  <text x="168" y="512" class="code mono">templated SQL</text>
+
+  <rect x="360" y="414" width="180" height="108" rx="9" fill="#232f47" stroke="#38455f" stroke-width="1.4"/>
+  <text x="378" y="440" fill="#eef2f8" class="btitle" font-size="15">Neo4j</text>
+  <text x="378" y="460" class="sub" font-size="11.5">RELATIONSHIP intent</text>
+  <text x="378" y="478" class="sub" font-size="11.5">paths, neighbourhoods,</text>
+  <text x="378" y="494" class="sub" font-size="11.5">co-investment webs</text>
+  <text x="378" y="512" class="code mono">templated Cypher</text>
+
+  <rect x="550" y="414" width="180" height="108" rx="9" fill="#232f47" stroke="#38455f" stroke-width="1.4"/>
+  <text x="568" y="440" fill="#eef2f8" class="btitle" font-size="15">Bedrock KB</text>
+  <text x="568" y="460" class="sub" font-size="11.5">DOCUMENT intent</text>
+  <text x="568" y="478" class="sub" font-size="11.5">rationale, quotes, tone,</text>
+  <text x="568" y="494" class="sub" font-size="11.5">the long tail</text>
+  <text x="568" y="512" class="code mono">RAG (shrinking)</text>
+
+  <!-- L2 escalation -->
+  <line x1="650" y1="336" x2="740" y2="336" stroke="#c78a2e" stroke-width="1.4" stroke-dasharray="4 4"/>
+  <line x1="740" y1="336" x2="740" y2="560" stroke="#c78a2e" stroke-width="1.4" stroke-dasharray="4 4"/>
+  <line x1="740" y1="560" x2="662" y2="560" stroke="#c78a2e" stroke-width="1.4" stroke-dasharray="4 4" marker-end="url(#arw)"/>
+  <text x="756" y="450" fill="#c78a2e" font-size="11" transform="rotate(90 756 450)" text-anchor="middle" class="mono">MULTI_HOP only (~10%)</text>
+
+  <rect x="150" y="546" width="510" height="76" rx="9" fill="#2a2418" stroke="#c78a2e" stroke-width="1.5"/>
+  <text x="172" y="572" fill="#e0a852" class="btitle">L2 — Planner (Sonnet / Bedrock Agent)</text>
+  <text x="172" y="592" class="sub">decomposes multi-hop queries, chains tools, synthesises answer</text>
+  <text x="172" y="610" class="code mono">graph result → SQL enrich → KB evidence → answer</text>
+  <text x="638" y="582" text-anchor="end" class="cost mono">$0.02-0.10/query</text>
+
+  <!-- ============ INGESTION ============ -->
+  <line x1="60" y1="688" x2="180" y2="688" stroke="#38455f" stroke-width="1"/>
+  <text x="192" y="693" class="lane">INGESTION TIME — EXTRACT ONCE, QUERY FOREVER</text>
+
+  <rect x="150" y="712" width="500" height="56" rx="9" fill="#232f47" stroke="#38455f" stroke-width="1.4"/>
+  <text x="172" y="738" fill="#eef2f8" class="btitle">Client documents (S3)</text>
+  <text x="172" y="758" class="sub">deal memos, theses, board packs — unstructured</text>
+
+  <line x1="400" y1="768" x2="400" y2="794" stroke="#5c9d78" stroke-width="1.6" marker-end="url(#arwG)"/>
+
+  <rect x="150" y="796" width="500" height="92" rx="9" fill="#1a2a22" stroke="#5c9d78" stroke-width="1.5"/>
+  <text x="172" y="822" fill="#86c79a" class="btitle">LLM extraction pass (one-time per doc)</text>
+  <text x="172" y="842" class="sub">pull entities, relations, amounts, dates into a typed schema</text>
+  <text x="172" y="860" class="code mono">(Investor)-[LED {round:"B", amt:40M}]-&gt;(Company)</text>
+  <text x="172" y="878" class="code mono">+ provenance: doc_id, page, confidence</text>
+
+  <!-- fan out from extraction -->
+  <line x1="255" y1="888" x2="255" y2="918" stroke="#5c9d78" stroke-width="1.6" marker-end="url(#arwG)"/>
+  <line x1="450" y1="888" x2="450" y2="918" stroke="#5c9d78" stroke-width="1.6" marker-end="url(#arwG)"/>
+  <line x1="620" y1="888" x2="620" y2="918" stroke="#6f7f9c" stroke-width="1.4" stroke-dasharray="4 4" marker-end="url(#arw)"/>
+
+  <rect x="150" y="920" width="200" height="66" rx="9" fill="#232f47" stroke="#5c9d78" stroke-width="1.3"/>
+  <text x="168" y="946" fill="#eef2f8" class="btitle" font-size="14">→ Neo4j</text>
+  <text x="168" y="964" class="sub" font-size="11.5">facts become edges</text>
+  <text x="168" y="980" class="code mono">queried free, forever</text>
+
+  <rect x="360" y="920" width="180" height="66" rx="9" fill="#232f47" stroke="#5c9d78" stroke-width="1.3"/>
+  <text x="378" y="946" fill="#eef2f8" class="btitle" font-size="14">→ Postgres</text>
+  <text x="378" y="964" class="sub" font-size="11.5">amounts, dates,</text>
+  <text x="378" y="980" class="sub" font-size="11.5">metrics rows</text>
+
+  <rect x="550" y="920" width="180" height="66" rx="9" fill="#232f47" stroke="#38455f" stroke-width="1.3"/>
+  <text x="568" y="946" fill="#eef2f8" class="btitle" font-size="14">→ Bedrock KB</text>
+  <text x="568" y="964" class="sub" font-size="11.5">residual: nuance, tone,</text>
+  <text x="568" y="980" class="sub" font-size="11.5">reasoning, quotes</text>
+
+  <!-- ============ CANONICAL SOURCE ============ -->
+  <line x1="60" y1="1052" x2="180" y2="1052" stroke="#38455f" stroke-width="1"/>
+  <text x="192" y="1057" class="lane">NOT DUPLICATION — PROJECTION</text>
+
+  <rect x="230" y="1076" width="340" height="72" rx="9" fill="#1d2740" stroke="#44546f" stroke-width="1.5"/>
+  <text x="400" y="1104" text-anchor="middle" fill="#eef2f8" class="btitle">Delta Lake Silver</text>
+  <text x="400" y="1124" text-anchor="middle" class="sub">ONE canonical, entity-resolved truth</text>
+  <text x="400" y="1140" text-anchor="middle" class="code mono">dealgraph.silver.deals</text>
+
+  <line x1="300" y1="1148" x2="230" y2="1188" stroke="#6f7f9c" stroke-width="1.6" marker-end="url(#arw)"/>
+  <line x1="500" y1="1148" x2="570" y2="1188" stroke="#6f7f9c" stroke-width="1.6" marker-end="url(#arw)"/>
+
+  <rect x="120" y="1190" width="240" height="60" rx="9" fill="#232f47" stroke="#38455f" stroke-width="1.3"/>
+  <text x="138" y="1215" fill="#eef2f8" class="btitle" font-size="14">Postgres projection</text>
+  <text x="138" y="1234" class="sub" font-size="11.5">read model optimised for SQL</text>
+
+  <rect x="450" y="1190" width="240" height="60" rx="9" fill="#232f47" stroke="#38455f" stroke-width="1.3"/>
+  <text x="468" y="1215" fill="#eef2f8" class="btitle" font-size="14">Neo4j projection</text>
+  <text x="468" y="1234" class="sub" font-size="11.5">read model optimised for traversal</text>
+
+  <text x="400" y="1284" text-anchor="middle" class="sub" font-size="12.5">Same facts, two shapes. Rebuildable from Silver at any time. CQRS, not copy-paste.</text>
+
+  <!-- ============ CALLOUTS ============ -->
+  <rect x="80" y="1318" width="640" height="146" rx="10" fill="#1d2740" stroke="#44546f" stroke-width="1.4"/>
+  <rect x="80" y="1318" width="5" height="146" rx="2" fill="#c78a2e"/>
+  <text x="104" y="1348" fill="#eef2f8" font-size="15" font-weight="700">The semantic layer IS the router</text>
+  <text x="104" y="1374" class="sub" font-size="13">Not optional. The classifier can't route reliably against raw schemas —</text>
+  <text x="104" y="1394" class="sub" font-size="13">it routes against a manifest of named metrics, entities and relations</text>
+  <text x="104" y="1414" class="sub" font-size="13">(the MetricFlow YAML, extended with graph relations). The LLM picks a</text>
+  <text x="104" y="1434" class="sub" font-size="13">named thing; the platform generates the SQL/Cypher. No freehand SQL,</text>
+  <text x="104" y="1454" class="sub" font-size="13">no hallucinated column names, ~50 tokens of routing context per query.</text>
+
+  <rect x="80" y="1484" width="640" height="146" rx="10" fill="#212a3d" stroke="#38455f" stroke-width="1.2"/>
+  <rect x="80" y="1484" width="5" height="146" rx="2" fill="#5c9d78"/>
+  <text x="104" y="1514" fill="#86c79a" font-size="15" font-weight="700">Token economics of the cascade</text>
+  <text x="104" y="1540" class="sub" font-size="13">Naive: every query → Bedrock Agent → 5-10 LLM calls → ~$0.05-0.25</text>
+  <text x="104" y="1560" class="sub" font-size="13">Cascade: 30% cache ($0) + 60% classified single-store (~$0.001, one</text>
+  <text x="104" y="1580" class="sub" font-size="13">cheap call + one templated query) + 10% full planner (~$0.05).</text>
+  <text x="104" y="1606" class="sub" font-size="13" fill="#c8d2e2">Blended cost drops roughly an order of magnitude at the same quality.</text>
+</svg>
