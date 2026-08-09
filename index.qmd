@@ -1,18 +1,18 @@
 ---
 title: "Deb Bose"
 subtitle: "Research • Notebooks • Papers • Projects"
-categories: [ai, quant, macro, economics, investment, political-economy, evolution, civilisation]
+categories: [investment, investment-research, data-engineering, ml, ai, governance, quant, macro, economics]
 ---
 
-**I help APRA-regulated risk and data teams build continuous AI assurance tooling** — the pipelines, controls, and observability that make ML and LLM systems auditable under CPG 235 and BCBS 239, not just demoable. I also take on quantitative research and end-to-end AI/ML delivery: from framing the question through to a system running in production.
+**I work at the intersection of investment research, data engineering, and machine learning, with governance built into the system rather than bolted on after.** That means the analytics that inform an investment decision, the pipelines and models underneath them, and the controls that let a reviewer trust the whole thing all come from the same person, designed together.
 
-Eighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. [GARP-certified in Risk and AI (RAI)](https://my.garp.org/DigitalBadgeRAI?id=003Po00000vhhe4IAA) and [CFA Level 1](https://credentials.cfainstitute.org/bfdef667-3429-4965-8558-ebaf88125e2a), so neither the assurance nor the finance is bolted on. If you have models in production and a regulator who wants evidence they behave — or a research question that deserves a real system behind it — [let's talk](#work-with-me).
+Eighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. [CFA Level 1](https://credentials.cfainstitute.org/bfdef667-3429-4965-8558-ebaf88125e2a) and [GARP-certified in Risk and AI (RAI)](https://my.garp.org/DigitalBadgeRAI?id=003Po00000vhhe4IAA), so neither the finance nor the governance is a veneer. If you have an investment question that deserves a real system behind it, a data platform that needs to be trustworthy by design, or models in production that a regulator wants evidence for, [let's talk](#work-with-me).
 
-APRA's April 2026 letter now expects second-line functions to have tooling to independently assess AI systems. That tooling is what I build.
+My working belief is that governance is a design property, not a compliance afterthought. Lineage, controls, and evidence are cheapest and most credible when they are built into the pipeline from the first commit, not reconstructed under audit.
 
 ---
 
-The rest of this site is a working archive — not a feed. It exists because I think in public.
+The rest of this site is a working archive, not a feed. It exists because I think in public.
 
 Everything here is oriented toward **truth-seeking through analysis**:
 quantitative reasoning where possible, first-principles thinking where necessary, and skepticism toward narratives that don’t survive contact with data.
@@ -21,24 +21,24 @@ quantitative reasoning where possible, first-principles thinking where necessary
 
 I take on a small number of engagements where the problem is concrete and the stakes are real:
 
-- **AI assurance and model governance** — continuous validation, drift and calibration monitoring, and audit trails that satisfy CPG 235 / BCBS 239 reviewers.
-- **End-to-end AI/ML delivery** — scoping, data, modelling, and deployment, owned through to a system that runs and is maintainable.
-- **Quantitative research** — portfolio analytics, economic time-series, and financial modelling, grounded in CFA Level 1 fundamentals and turned into reproducible systems rather than one-off notebooks.
-- **Data platform modernisation** — DBT, Iceberg, Redshift, and observable pipelines, built so the lineage and controls are first-class, not bolted on.
+- **Investment research and quantitative analysis.** Portfolio analytics, economic time-series, and financial modelling, grounded in CFA Level 1 fundamentals and turned into reproducible systems rather than one-off notebooks.
+- **Data engineering and platform modernisation.** DBT, Iceberg, Redshift, and observable pipelines, built so the lineage, contracts, and controls are first-class from the first commit.
+- **End-to-end ML and AI delivery.** Scoping, data, modelling, and deployment, owned through to a system that runs, is maintainable, and can be reasoned about.
+- **Data and AI governance by design.** Lineage, model validation, drift and calibration monitoring, and audit trails designed into the pipeline, so evidence for CPG 235 / BCBS 239 reviewers is a by-product of how the system is built, not a project of its own.
 
 If that maps to a problem you have, email **[bose.debasish@gmail.com](mailto:bose.debasish@gmail.com)** or read more [about my background](./about.qmd).
 
 ## What you’ll find here
 
 ### Articles
-Essays, market notes, and technical deep dives — written to clarify, not to perform.
+Essays, market notes, and technical deep dives, written to clarify, not to perform.
 
 ### Notebooks
 Runnable research with code, charts, and assumptions made explicit.  
 Exploratory by design, not polished marketing artefacts.
 
 ### Papers
-Drafts, PDFs, and reference material — including work that is incomplete, evolving, or deliberately unresolved.
+Drafts, PDFs, and reference material, including work that is incomplete, evolving, or deliberately unresolved.
 
 ### Projects
 Pointers to my GitHub work: tools, models, and systems built to answer specific questions.

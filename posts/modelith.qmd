@@ -1,0 +1,134 @@
+---
+title: "Modelith: putting the data model back in the same file as the code that builds it"
+description: "A data model that lives in a diagramming tool drifts from the warehouse within a sprint, because nothing forces the two to agree. Modelith is an ontology-anchored, git-native modeler that keeps the entity-relationship model and the dbt code in one repo, under one history. You edit an ER diagram beside your dbt YAML in VS Code, generate contract-enforced dbt through a round-trip that preserves your hand-edits, and get told exactly what drifted when the warehouse changes underneath you. Covers the protected-region emitter and three-way merge, drift classification, reverse engineering from a manifest, and why the model has to be a build artifact rather than a picture."
+date: 2026-08-09
+categories: [Data Engineering, Data Modeling, DBT, ERD, Ontology, Drift, Reverse Engineering, VS Code, Architecture]
+author:
+  - name: D. Bose
+    location: Sydney, NSW, Australia
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    code-fold: false
+---
+
+Across the last few posts I keep circling the same conviction: define the meaning of a thing once, and force every consumer through that definition. [FlowProxy](https://dbose.github.io/posts/flowproxy.html) did it for metrics, so a BI tool could not quietly redefine a balance. The [semantic contract post](https://dbose.github.io/posts/semantic-contract-graph.html) pushed it across three stores, so a graph and a document pile answered to the same spec as the tables.
+
+This one goes upstream of all of that, to the data model itself. Because there is a lie most teams live with, and it sits right at the top of the stack.
+
+## The model is a lie by the second sprint
+
+Here is the pattern, and you have almost certainly lived it. At the start of a project someone opens a modeling tool. erwin, a Lucidchart board, a diagram in a Confluence page. They draw entities and relationships, agree on it in a room, and export a picture. Then the real work starts, and the real work happens in dbt. Models get built, columns get added, a grain changes, a foreign key gets dropped because it was inconvenient.
+
+Nobody goes back and updates the diagram. Why would they. It is a separate file, in a separate tool, that no build depends on. Within a sprint or two the diagram describes a warehouse that no longer exists, and everyone knows it, so they stop opening it. The model was documentation, and documentation that is not enforced is just a rumour about the past.
+
+The instinct is to blame discipline. Write a policy, add a checklist item, nag people in review. That never works, because it is fighting physics. Two artifacts that are not mechanically coupled will drift, the same way two clocks that are not synced will drift. The fix is not more discipline. The fix is to remove the second artifact.
+
+## One artifact, in the same repo, under the same history
+
+Modelith is a data modeler built on that removal. The entity-relationship model and the dbt code are not two things kept in sync. They are the same thing, in the same git repository, and one generates the other.
+
+You author a logical model as YAML: entities, attributes, keys, relationships, subject areas, domains. That YAML is the source of truth. From it, Modelith generates a dbt project with contracts, tests, and the boilerplate that usually rots by hand. When you want to see the shape of what you have, it renders an entity-relationship diagram from the same YAML, live, so the picture cannot disagree with the definition because it is a projection of it.
+
+::: {.callout-note icon="false"}
+## The whole design in one sentence
+
+There is no diagram file to keep in sync, because the diagram is a view of the model, and the model is a view of the repo.
+:::
+
+The tool is a Python CLI called `mdl`, a React canvas for the visual side, and a VS Code extension that puts the canvas beside your editor. You read and edit the model as text on one side and watch the diagram update on the other. Save the YAML, the diagram re-renders. This matters more than it sounds: it means the modeling and the engineering happen in the same window, in the same flow, by the same person. There is no handoff from a modeler in a desktop app to an engineer in an IDE, because the handoff is where the drift was born.
+
+## The round-trip has to leave your SQL alone
+
+Code generation has an old, deserved reputation for being a trap. The tool scaffolds something beautiful, you hand-edit it to make it actually work, and then the next generation flattens your edits. You learn to generate once and never again, which quietly turns the generator into a one-time scaffold and the model into a lie all over again.
+
+So the interesting engineering in Modelith is not the first generation. It is the second, and the two-hundredth. The emitter writes into protected regions and does a three-way merge against the last generated state, so your hand-edits survive regeneration.
+
+```yaml
+# generated by mdl. edit inside the protected block; it is preserved on regen.
+models:
+  - name: dim_customer
+    config:
+      contract:
+        enforced: true
+    # <<< mdl:protected
+    description: >
+      Customer dimension. The late-arriving logic below was added by hand
+      after a real incident and must not be regenerated away.
+    # >>> mdl:protected
+    columns:
+      - name: customer_id
+        data_type: bigint
+        constraints:
+          - type: primary_key
+```
+
+The three-way merge is the part that makes this safe rather than merely convenient. Modelith keeps the last thing it generated. On the next run it computes what changed in the model, what changed in your hand-edits, and reconciles them the way a version control merge does, rather than clobbering one side with the other. A tool that cannot be trusted to leave your SQL alone gets used exactly once. A tool that can becomes the thing you regenerate on every change without a second thought.
+
+## Knowing the model is wrong beats a pretty picture
+
+The diagram is the least interesting output. The most interesting one is the alarm.
+
+Because even with a generated dbt project, reality drifts. Someone runs a migration outside the model. A source table gains a column. A type changes under you. Modelith reads the built warehouse, compares it against the model, and classifies every difference into one of three buckets.
+
+::: {.callout-tip icon="false"}
+## Additive
+
+A new column, a new table, something present downstream that the model did not know about. Safe to adopt. Modelith can lift it back into the model for you.
+:::
+
+::: {.callout-important icon="false"}
+## Breaking
+
+A dropped column something depends on, a type change that violates a contract, a key that no longer holds. This is the one you want to fail a pull request.
+:::
+
+::: {.callout-note icon="false"}
+## Cosmetic
+
+A reordering, a comment, a whitespace difference. Noise. Modelith says so, so it does not drown the signal.
+:::
+
+That classification is the whole value. A diff that says "142 things changed" is useless in a code review. A diff that says "one of these is breaking and here is which" is the difference between catching an incident on a branch and catching it in production. Knowing your model is wrong, precisely, is worth more than a diagram that was right last month.
+
+## And it reads the warehouse back the other way
+
+The generation story assumes you started with a model. Most teams did not. They have a mature dbt project and no model at all, or a diagram so stale it is archaeology.
+
+So Modelith runs the other direction too. Point it at a dbt manifest and catalog and it lifts a logical model out of the physical one: it reads the tables and columns, infers relationships from the foreign-key signals and naming conventions, recognises the shape of a slowly-changing dimension or a surrogate key, and writes the logical layer back as YAML you can then edit and regenerate from. It is not magic and it does not claim to be. It records the decisions it made in a ledger you can correct, so a wrong inference is a one-line fix rather than a reason to distrust the whole import.
+
+This is the on-ramp. You do not have to model greenfield to start. You reverse the project you already have, correct what the inference got wrong, and from that point forward the model and the code move together.
+
+## Why anchor it to an ontology
+
+There is one more layer, and it is the part that ties this back to the earlier posts. A logical model in isolation still lets two teams call the same concept two different names, and call two different concepts the same name. Modelith lets you align entities and attributes to a shared vocabulary, a four-layer ontology stack with FIBO and SKOS available, and export the whole thing as RDF, OWL, and SHACL.
+
+The point is not standards-compliance for its own sake. It is the same conviction as the metric layer. If `counterparty` in one model and `counterparty` in another both resolve to the same ontology term, they mean the same thing by construction, not by a data steward's memory. The glossary stops being a wiki page and becomes a set of references the model can be validated against. Governance sync, including a Collibra adapter and OpenLineage events, falls out of the same anchoring.
+
+## Where it runs
+
+It runs where the work already happens. The extension is published on Open VSX, so it installs directly in VS Code, Cursor, Windsurf, and VSCodium: search "Modelith" and it is there. It does not bundle its own copy of the canvas; it launches `mdl serve` and embeds the live view, which means whatever the CLI understands, the editor shows, including inside a devcontainer where it runs next to dbt and your warehouse credentials.
+
+```bash
+# install the CLI
+uv tool install modelith
+
+# reverse an existing dbt project into a logical model
+mdl import dbt --manifest target/manifest.json --catalog target/catalog.json --out model/
+
+# generate contract-enforced dbt from the model
+mdl generate
+
+# see what drifted since the last build
+mdl drift --check
+```
+
+## The through-line
+
+Every post I write lately is the same argument wearing different clothes. Define meaning once, put it where the build can reach it, and force everything else to be a projection of it rather than a copy that drifts.
+
+FlowProxy did it so a BI tool could not redefine a metric. The semantic contract did it so a graph and a document store answered to one spec. Modelith does it for the data model, the artifact that was supposed to describe everything downstream and instead became the first thing to go stale. The model is not a picture you draw once and abandon. It is a build artifact, versioned with the code, generating the code, and complaining loudly when reality stops matching it.
+
+The repository, and the longer version of all of this, is at [github.com/dbose/modelith](https://github.com/dbose/modelith). If you model data and live in dbt, I would rather hear where it breaks on your project than have it sit quietly being right in mine.
