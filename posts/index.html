@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -41,10 +44,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-637a8987fd156daea465eecdbde71ac9.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-3d1b6502958a38d6b4d29f0899443d12.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -103,7 +106,7 @@ ul.task-list li input[type="checkbox"] {
   </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -222,7 +225,24 @@ window.Quarto = {
 
 <div class="quarto-listing quarto-listing-container-default" id="listing-listing">
 <div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDU2VtYW50aWMlMjBMYXllciUyQ01ldHJpY0Zsb3clMkNLbm93bGVkZ2UlMjBHcmFwaCUyQ05lbzRqJTJDTExNcyUyQ1JBRyUyQ01DUCUyQ0FyY2hpdGVjdHVyZSUyQ0FXUw==" data-listing-date-sort="1783728000000" data-listing-file-modified-sort="1783755405614" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4034">
+<div class="quarto-post image-right" data-index="0" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDRGF0YSUyME1vZGVsaW5nJTJDREJUJTJDRVJEJTJDT250b2xvZ3klMkNEcmlmdCUyQ1JldmVyc2UlMjBFbmdpbmVlcmluZyUyQ1ZTJTIwQ29kZSUyQ0FyY2hpdGVjdHVyZQ==" data-listing-date-sort="1786233600000" data-listing-file-modified-sort="1786273085808" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="9" data-listing-word-count-sort="1691">
+<div class="body">
+<h3 class="no-anchor listing-title">
+<a href="../posts/modelith.html" class="no-external">Modelith: putting the data model back in the same file as the code that builds it</a>
+</h3>
+<div class="delink listing-description"><a href="../posts/modelith.html" class="no-external">
+<p>A data model that lives in a diagramming tool drifts from the warehouse within a sprint, because nothing forces the two to agree. Modelith is an ontology-anchored, git-native modeler that keeps the entity-relationship model and the dbt code in one repo, under one history. You edit an ER diagram beside your dbt YAML in VS Code, generate contract-enforced dbt through a round-trip that preserves your hand-edits, and get told exactly what drifted when the warehouse changes underneath you. Covers the protected-region emitter and three-way merge, drift classification, reverse engineering from a manifest, and why the model has to be a build artifact rather than a picture.</p>
+</a></div>
+</div>
+<div class="metadata">
+<a href="../posts/modelith.html" class="no-external">
+<div class="listing-date">
+Aug 9, 2026
+</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="1" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDU2VtYW50aWMlMjBMYXllciUyQ01ldHJpY0Zsb3clMkNLbm93bGVkZ2UlMjBHcmFwaCUyQ05lbzRqJTJDTExNcyUyQ1JBRyUyQ01DUCUyQ0FyY2hpdGVjdHVyZSUyQ0FXUw==" data-listing-date-sort="1783728000000" data-listing-file-modified-sort="1786273085808" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4034">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/semantic-contract-graph.html" class="no-external">One semantic contract, three stores: routing metrics, graphs, and documents without letting an LLM write SQL</a>
@@ -239,7 +259,7 @@ Jul 11, 2026
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="1" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDREJUJTJDU2VtYW50aWMlMjBMYXllciUyQ01ldHJpY0Zsb3clMkNQb3N0Z3JlU1FMJTJDQkklMkNNQ1AlMkNMTE1zJTJDQWlyLWdhcHBlZCUyQ0FyY2hpdGVjdHVyZQ==" data-listing-date-sort="1783296000000" data-listing-file-modified-sort="1783755405612" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3738">
+<div class="quarto-post image-right" data-index="2" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDREJUJTJDU2VtYW50aWMlMjBMYXllciUyQ01ldHJpY0Zsb3clMkNQb3N0Z3JlU1FMJTJDQkklMkNNQ1AlMkNMTE1zJTJDQWlyLWdhcHBlZCUyQ0FyY2hpdGVjdHVyZQ==" data-listing-date-sort="1783296000000" data-listing-file-modified-sort="1786273085807" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3738">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/flowproxy.html" class="no-external">Building FlowProxy: a dbt Semantic Layer that BI tools can actually reach</a>
@@ -256,7 +276,7 @@ Jul 6, 2026
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="2" data-categories="QUlPcHMlMkNNTE9wcyUyQ0xMTXMlMkNBSSUyQ0Nvc3QlMjBPcHRpbWlzYXRpb24lMkNEQlQlMkNBaXJmbG93JTJDRGF0YSUyMEVuZ2luZWVyaW5n" data-listing-date-sort="1782604800000" data-listing-file-modified-sort="1783755405611" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="38" data-listing-word-count-sort="7403">
+<div class="quarto-post image-right" data-index="3" data-categories="QUlPcHMlMkNNTE9wcyUyQ0xMTXMlMkNBSSUyQ0Nvc3QlMjBPcHRpbWlzYXRpb24lMkNEQlQlMkNBaXJmbG93JTJDRGF0YSUyMEVuZ2luZWVyaW5n" data-listing-date-sort="1782604800000" data-listing-file-modified-sort="1786273085805" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="38" data-listing-word-count-sort="7403">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/flat-ai-spend.html" class="no-external">Keeping AI Spend Flat While Token Usage Grows Exponentially</a>
@@ -273,7 +293,7 @@ Jun 28, 2026
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="3" data-categories="SW5mb3JtYXRpb24lMjBSZXRyaWV2YWwlMkNHcmFwaCUyMFRoZW9yeSUyQ0J5emFudGluZSUyMEZhdWx0JTIwVG9sZXJhbmNlJTJDU2VhcmNoJTIwRW5naW5lcyUyQ0xMTXMlMkNBSSUyQ0VwaXN0ZW1vbG9neQ==" data-listing-date-sort="1771718400000" data-listing-file-modified-sort="1783755405614" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3954">
+<div class="quarto-post image-right" data-index="4" data-categories="SW5mb3JtYXRpb24lMjBSZXRyaWV2YWwlMkNHcmFwaCUyMFRoZW9yeSUyQ0J5emFudGluZSUyMEZhdWx0JTIwVG9sZXJhbmNlJTJDU2VhcmNoJTIwRW5naW5lcyUyQ0xMTXMlMkNBSSUyQ0VwaXN0ZW1vbG9neQ==" data-listing-date-sort="1771718400000" data-listing-file-modified-sort="1786273085808" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3954">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/pagerank_critique.html" class="no-external">PageRank as a Popularity Contest: Structural Vulnerabilities, Collusion Dynamics, and a Byzantine Fault-Tolerant Alternative</a>

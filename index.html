@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -39,10 +42,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-637a8987fd156daea465eecdbde71ac9.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-3d1b6502958a38d6b4d29f0899443d12.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -155,14 +158,15 @@ ul.task-list li input[type="checkbox"] {
 <h1 class="title">Deb Bose</h1>
 <p class="subtitle lead">Research • Notebooks • Papers • Projects</p>
   <div class="quarto-categories">
+    <div class="quarto-category">investment</div>
+    <div class="quarto-category">investment-research</div>
+    <div class="quarto-category">data-engineering</div>
+    <div class="quarto-category">ml</div>
     <div class="quarto-category">ai</div>
+    <div class="quarto-category">governance</div>
     <div class="quarto-category">quant</div>
     <div class="quarto-category">macro</div>
     <div class="quarto-category">economics</div>
-    <div class="quarto-category">investment</div>
-    <div class="quarto-category">political-economy</div>
-    <div class="quarto-category">evolution</div>
-    <div class="quarto-category">civilisation</div>
   </div>
   </div>
 
@@ -180,20 +184,20 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p><strong>I help APRA-regulated risk and data teams build continuous AI assurance tooling</strong> — the pipelines, controls, and observability that make ML and LLM systems auditable under CPG 235 and BCBS 239, not just demoable. I also take on quantitative research and end-to-end AI/ML delivery: from framing the question through to a system running in production.</p>
-<p>Eighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. <a href="https://my.garp.org/DigitalBadgeRAI?id=003Po00000vhhe4IAA">GARP-certified in Risk and AI (RAI)</a> and <a href="https://credentials.cfainstitute.org/bfdef667-3429-4965-8558-ebaf88125e2a">CFA Level 1</a>, so neither the assurance nor the finance is bolted on. If you have models in production and a regulator who wants evidence they behave — or a research question that deserves a real system behind it — <a href="#work-with-me">let’s talk</a>.</p>
-<p>APRA’s April 2026 letter now expects second-line functions to have tooling to independently assess AI systems. That tooling is what I build.</p>
+<p><strong>I work at the intersection of investment research, data engineering, and machine learning, with governance built into the system rather than bolted on after.</strong> That means the analytics that inform an investment decision, the pipelines and models underneath them, and the controls that let a reviewer trust the whole thing all come from the same person, designed together.</p>
+<p>Eighteen years shipping data platforms and quantitative systems in financial services, most recently leading data modernisation at Macquarie Group. <a href="https://credentials.cfainstitute.org/bfdef667-3429-4965-8558-ebaf88125e2a">CFA Level 1</a> and <a href="https://my.garp.org/DigitalBadgeRAI?id=003Po00000vhhe4IAA">GARP-certified in Risk and AI (RAI)</a>, so neither the finance nor the governance is a veneer. If you have an investment question that deserves a real system behind it, a data platform that needs to be trustworthy by design, or models in production that a regulator wants evidence for, <a href="#work-with-me">let’s talk</a>.</p>
+<p>My working belief is that governance is a design property, not a compliance afterthought. Lineage, controls, and evidence are cheapest and most credible when they are built into the pipeline from the first commit, not reconstructed under audit.</p>
 <hr>
-<p>The rest of this site is a working archive — not a feed. It exists because I think in public.</p>
+<p>The rest of this site is a working archive, not a feed. It exists because I think in public.</p>
 <p>Everything here is oriented toward <strong>truth-seeking through analysis</strong>: quantitative reasoning where possible, first-principles thinking where necessary, and skepticism toward narratives that don’t survive contact with data.</p>
 <section id="work-with-me" class="level2">
 <h2 class="anchored" data-anchor-id="work-with-me">Work with me</h2>
 <p>I take on a small number of engagements where the problem is concrete and the stakes are real:</p>
 <ul>
-<li><strong>AI assurance and model governance</strong> — continuous validation, drift and calibration monitoring, and audit trails that satisfy CPG 235 / BCBS 239 reviewers.</li>
-<li><strong>End-to-end AI/ML delivery</strong> — scoping, data, modelling, and deployment, owned through to a system that runs and is maintainable.</li>
-<li><strong>Quantitative research</strong> — portfolio analytics, economic time-series, and financial modelling, grounded in CFA Level 1 fundamentals and turned into reproducible systems rather than one-off notebooks.</li>
-<li><strong>Data platform modernisation</strong> — DBT, Iceberg, Redshift, and observable pipelines, built so the lineage and controls are first-class, not bolted on.</li>
+<li><strong>Investment research and quantitative analysis.</strong> Portfolio analytics, economic time-series, and financial modelling, grounded in CFA Level 1 fundamentals and turned into reproducible systems rather than one-off notebooks.</li>
+<li><strong>Data engineering and platform modernisation.</strong> DBT, Iceberg, Redshift, and observable pipelines, built so the lineage, contracts, and controls are first-class from the first commit.</li>
+<li><strong>End-to-end ML and AI delivery.</strong> Scoping, data, modelling, and deployment, owned through to a system that runs, is maintainable, and can be reasoned about.</li>
+<li><strong>Data and AI governance by design.</strong> Lineage, model validation, drift and calibration monitoring, and audit trails designed into the pipeline, so evidence for CPG 235 / BCBS 239 reviewers is a by-product of how the system is built, not a project of its own.</li>
 </ul>
 <p>If that maps to a problem you have, email <strong><a href="mailto:bose.debasish@gmail.com">bose.debasish@gmail.com</a></strong> or read more <a href="./about.html">about my background</a>.</p>
 </section>
@@ -201,7 +205,7 @@ ul.task-list li input[type="checkbox"] {
 <h2 class="anchored" data-anchor-id="what-youll-find-here">What you’ll find here</h2>
 <section id="articles" class="level3">
 <h3 class="anchored" data-anchor-id="articles">Articles</h3>
-<p>Essays, market notes, and technical deep dives — written to clarify, not to perform.</p>
+<p>Essays, market notes, and technical deep dives, written to clarify, not to perform.</p>
 </section>
 <section id="notebooks" class="level3">
 <h3 class="anchored" data-anchor-id="notebooks">Notebooks</h3>
@@ -210,7 +214,7 @@ Exploratory by design, not polished marketing artefacts.</p>
 </section>
 <section id="papers" class="level3">
 <h3 class="anchored" data-anchor-id="papers">Papers</h3>
-<p>Drafts, PDFs, and reference material — including work that is incomplete, evolving, or deliberately unresolved.</p>
+<p>Drafts, PDFs, and reference material, including work that is incomplete, evolving, or deliberately unresolved.</p>
 </section>
 <section id="projects" class="level3">
 <h3 class="anchored" data-anchor-id="projects">Projects</h3>
