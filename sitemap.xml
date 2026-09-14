@@ -1,91 +1,95 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://dbose.github.io/index.html</loc>
-    <lastmod>2026-08-09T10:58:05.602Z</lastmod>
+    <loc>https://dbose.github.io/posts/modelith-what-i-learned.html</loc>
+    <lastmod>2026-09-14T13:04:27.135Z</lastmod>
   </url>
   <url>
     <loc>https://dbose.github.io/posts/flowproxy.html</loc>
-    <lastmod>2026-08-09T10:58:05.807Z</lastmod>
+    <lastmod>2026-09-14T13:04:27.114Z</lastmod>
   </url>
   <url>
     <loc>https://dbose.github.io/posts/semantic-contract-graph.html</loc>
-    <lastmod>2026-08-09T10:58:05.808Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/posts/modelith.html</loc>
-    <lastmod>2026-08-09T10:58:05.808Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html</loc>
-    <lastmod>2026-08-09T10:58:05.692Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/index.html</loc>
-    <lastmod>2026-08-09T10:58:05.780Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/MiniFund_VolatilityRegime_Backtest_2000_2024.html</loc>
-    <lastmod>2026-08-09T10:58:05.699Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/Liquidity Regimes and the Death of Valuations - v2.html</loc>
-    <lastmod>2026-08-09T10:58:05.693Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/index.html</loc>
-    <lastmod>2026-08-09T10:58:05.805Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/AURA-Neuro–Symbolic-Energy–Efficient-Architecture-Reusing-LLM-Infrastructure.meta.html</loc>
-    <lastmod>2026-08-09T10:58:05.788Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/Aerospace-defense-industry-overview-investment-thesis.meta.html</loc>
-    <lastmod>2026-08-09T10:58:05.789Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/about.html</loc>
-    <lastmod>2026-08-09T10:58:05.602Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/Paper_A_Revised_1971_Shock.html</loc>
-    <lastmod>2026-08-09T10:58:05.805Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/papers/Hydroverse - Opportunity Report.meta.html</loc>
-    <lastmod>2026-08-09T10:58:05.802Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/Education and QoL-Satisfaction.html</loc>
-    <lastmod>2026-08-09T10:58:05.686Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/aerospace-defense.html</loc>
-    <lastmod>2026-08-09T10:58:05.760Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/mosaic-20-cancer-analysis.html</loc>
-    <lastmod>2026-08-09T10:58:05.788Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/Follow-The-Money.html</loc>
-    <lastmod>2026-08-09T10:58:05.687Z</lastmod>
-  </url>
-  <url>
-    <loc>https://dbose.github.io/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html</loc>
-    <lastmod>2026-08-09T10:58:05.687Z</lastmod>
+    <lastmod>2026-09-14T13:04:27.136Z</lastmod>
   </url>
   <url>
     <loc>https://dbose.github.io/posts/flat-ai-spend.html</loc>
-    <lastmod>2026-08-09T10:58:05.805Z</lastmod>
+    <lastmod>2026-09-14T13:04:27.113Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/MiniFund_VolatilityRegime_Backtest_2000_2024.html</loc>
+    <lastmod>2026-09-14T13:04:27.010Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/Empirical Validation of the 1971 Fiscal Structural Break - Analysis of U.S Real Individual Income Tax Revenue.html</loc>
+    <lastmod>2026-09-14T13:04:26.999Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/Follow-The-Money.html</loc>
+    <lastmod>2026-09-14T13:04:26.999Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/Liquidity Regimes and the Death (and Return) of Valuations.html</loc>
+    <lastmod>2026-09-14T13:04:27.004Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/index.html</loc>
+    <lastmod>2026-09-14T13:04:27.088Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/Aerospace-defense-industry-overview-investment-thesis.meta.html</loc>
+    <lastmod>2026-09-14T13:04:27.097Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/AURA-Neuro–Symbolic-Energy–Efficient-Architecture-Reusing-LLM-Infrastructure.meta.html</loc>
+    <lastmod>2026-09-14T13:04:27.096Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/index.html</loc>
+    <lastmod>2026-09-14T13:04:26.914Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/index.html</loc>
+    <lastmod>2026-09-14T13:04:27.113Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/Hydroverse - Opportunity Report.meta.html</loc>
+    <lastmod>2026-09-14T13:04:27.111Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/papers/Paper_A_Revised_1971_Shock.html</loc>
+    <lastmod>2026-09-14T13:04:27.113Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/Liquidity Regimes and the Death of Valuations - v2.html</loc>
+    <lastmod>2026-09-14T13:04:27.004Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/mosaic-20-cancer-analysis.html</loc>
+    <lastmod>2026-09-14T13:04:27.096Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/aerospace-defense.html</loc>
+    <lastmod>2026-09-14T13:04:27.068Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/notebooks/Education and QoL-Satisfaction.html</loc>
+    <lastmod>2026-09-14T13:04:26.998Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/about.html</loc>
+    <lastmod>2026-09-14T13:04:26.914Z</lastmod>
   </url>
   <url>
     <loc>https://dbose.github.io/posts/index.html</loc>
-    <lastmod>2026-08-09T10:58:05.808Z</lastmod>
+    <lastmod>2026-09-14T13:04:27.135Z</lastmod>
   </url>
   <url>
     <loc>https://dbose.github.io/posts/pagerank_critique.html</loc>
-    <lastmod>2026-08-09T10:58:05.808Z</lastmod>
+    <lastmod>2026-09-14T13:04:27.136Z</lastmod>
+  </url>
+  <url>
+    <loc>https://dbose.github.io/posts/modelith.html</loc>
+    <lastmod>2026-09-14T13:04:27.136Z</lastmod>
   </url>
 </urlset>

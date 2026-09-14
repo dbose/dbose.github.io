@@ -47,7 +47,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-3d1b6502958a38d6b4d29f0899443d12.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-be9ea2f46684da68f705b6d67b70e0b7.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -225,7 +225,24 @@ window.Quarto = {
 
 <div class="quarto-listing quarto-listing-container-default" id="listing-listing">
 <div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDRGF0YSUyME1vZGVsaW5nJTJDREJUJTJDRVJEJTJDT250b2xvZ3klMkNEcmlmdCUyQ1JldmVyc2UlMjBFbmdpbmVlcmluZyUyQ1ZTJTIwQ29kZSUyQ0FyY2hpdGVjdHVyZQ==" data-listing-date-sort="1786233600000" data-listing-file-modified-sort="1786273085808" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="9" data-listing-word-count-sort="1691">
+<div class="quarto-post image-right" data-index="0" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDRGF0YSUyME1vZGVsaW5nJTJDREJUJTJDRVJEJTJDT250b2xvZ3klMkNEcmlmdCUyQ1JldmVyc2UlMjBFbmdpbmVlcmluZyUyQ1ZTJTIwQ29kZSUyQ0dvdmVybmFuY2UlMkNBcmNoaXRlY3R1cmU=" data-listing-date-sort="1789344000000" data-listing-file-modified-sort="1789391067135" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3655">
+<div class="body">
+<h3 class="no-anchor listing-title">
+<a href="../posts/modelith-what-i-learned.html" class="no-external">Modelith, part two: a governance tool has to be clean against itself, and reviewable by a team</a>
+</h3>
+<div class="delink listing-description"><a href="../posts/modelith-what-i-learned.html" class="no-external">
+<p>A technical follow-up to the first Modelith post, covering what shipped since: a self-grading reverse-and-drift trust metric, and Studio, a two-persona git-ops app that turns every model change into a reviewed pull request. Point Modelith at a mature warehouse and the very first drift check runs the reversed model against the warehouse it just came from, so if that check is not clean the tool has already lied; a real end-to-end run on a 77-model drug-discovery warehouse (52 entities, 46 relationships, zero breaking drift) shows it clean, and two real bugs the self-check caught along the way. The other half is collaboration: an architect canvas and an SME glossary onto one repo, a semantic merge engine that diffs the model by meaning and routes each change to the right reviewers, proposals that open a pull request on any git host, plus an IdP seam, an auth write-gate, and an OpenTelemetry audit log. Ends with an open call for design partners, investors, and collaborators.</p>
+</a></div>
+</div>
+<div class="metadata">
+<a href="../posts/modelith-what-i-learned.html" class="no-external">
+<div class="listing-date">
+Sep 14, 2026
+</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="1" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDRGF0YSUyME1vZGVsaW5nJTJDREJUJTJDRVJEJTJDT250b2xvZ3klMkNEcmlmdCUyQ1JldmVyc2UlMjBFbmdpbmVlcmluZyUyQ1ZTJTIwQ29kZSUyQ0FyY2hpdGVjdHVyZQ==" data-listing-date-sort="1786233600000" data-listing-file-modified-sort="1789391067136" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="9" data-listing-word-count-sort="1691">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/modelith.html" class="no-external">Modelith: putting the data model back in the same file as the code that builds it</a>
@@ -242,7 +259,7 @@ Aug 9, 2026
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="1" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDU2VtYW50aWMlMjBMYXllciUyQ01ldHJpY0Zsb3clMkNLbm93bGVkZ2UlMjBHcmFwaCUyQ05lbzRqJTJDTExNcyUyQ1JBRyUyQ01DUCUyQ0FyY2hpdGVjdHVyZSUyQ0FXUw==" data-listing-date-sort="1783728000000" data-listing-file-modified-sort="1786273085808" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4034">
+<div class="quarto-post image-right" data-index="2" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDU2VtYW50aWMlMjBMYXllciUyQ01ldHJpY0Zsb3clMkNLbm93bGVkZ2UlMjBHcmFwaCUyQ05lbzRqJTJDTExNcyUyQ1JBRyUyQ01DUCUyQ0FyY2hpdGVjdHVyZSUyQ0FXUw==" data-listing-date-sort="1783728000000" data-listing-file-modified-sort="1789391067136" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4034">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/semantic-contract-graph.html" class="no-external">One semantic contract, three stores: routing metrics, graphs, and documents without letting an LLM write SQL</a>
@@ -259,7 +276,7 @@ Jul 11, 2026
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="2" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDREJUJTJDU2VtYW50aWMlMjBMYXllciUyQ01ldHJpY0Zsb3clMkNQb3N0Z3JlU1FMJTJDQkklMkNNQ1AlMkNMTE1zJTJDQWlyLWdhcHBlZCUyQ0FyY2hpdGVjdHVyZQ==" data-listing-date-sort="1783296000000" data-listing-file-modified-sort="1786273085807" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3738">
+<div class="quarto-post image-right" data-index="3" data-categories="RGF0YSUyMEVuZ2luZWVyaW5nJTJDREJUJTJDU2VtYW50aWMlMjBMYXllciUyQ01ldHJpY0Zsb3clMkNQb3N0Z3JlU1FMJTJDQkklMkNNQ1AlMkNMTE1zJTJDQWlyLWdhcHBlZCUyQ0FyY2hpdGVjdHVyZQ==" data-listing-date-sort="1783296000000" data-listing-file-modified-sort="1789391067114" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3738">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/flowproxy.html" class="no-external">Building FlowProxy: a dbt Semantic Layer that BI tools can actually reach</a>
@@ -276,7 +293,7 @@ Jul 6, 2026
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="3" data-categories="QUlPcHMlMkNNTE9wcyUyQ0xMTXMlMkNBSSUyQ0Nvc3QlMjBPcHRpbWlzYXRpb24lMkNEQlQlMkNBaXJmbG93JTJDRGF0YSUyMEVuZ2luZWVyaW5n" data-listing-date-sort="1782604800000" data-listing-file-modified-sort="1786273085805" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="38" data-listing-word-count-sort="7403">
+<div class="quarto-post image-right" data-index="4" data-categories="QUlPcHMlMkNNTE9wcyUyQ0xMTXMlMkNBSSUyQ0Nvc3QlMjBPcHRpbWlzYXRpb24lMkNEQlQlMkNBaXJmbG93JTJDRGF0YSUyMEVuZ2luZWVyaW5n" data-listing-date-sort="1782604800000" data-listing-file-modified-sort="1789391067113" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="38" data-listing-word-count-sort="7403">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/flat-ai-spend.html" class="no-external">Keeping AI Spend Flat While Token Usage Grows Exponentially</a>
@@ -293,7 +310,7 @@ Jun 28, 2026
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="4" data-categories="SW5mb3JtYXRpb24lMjBSZXRyaWV2YWwlMkNHcmFwaCUyMFRoZW9yeSUyQ0J5emFudGluZSUyMEZhdWx0JTIwVG9sZXJhbmNlJTJDU2VhcmNoJTIwRW5naW5lcyUyQ0xMTXMlMkNBSSUyQ0VwaXN0ZW1vbG9neQ==" data-listing-date-sort="1771718400000" data-listing-file-modified-sort="1786273085808" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3954">
+<div class="quarto-post image-right" data-index="5" data-categories="SW5mb3JtYXRpb24lMjBSZXRyaWV2YWwlMkNHcmFwaCUyMFRoZW9yeSUyQ0J5emFudGluZSUyMEZhdWx0JTIwVG9sZXJhbmNlJTJDU2VhcmNoJTIwRW5naW5lcyUyQ0xMTXMlMkNBSSUyQ0VwaXN0ZW1vbG9neQ==" data-listing-date-sort="1771718400000" data-listing-file-modified-sort="1789391067136" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3954">
 <div class="body">
 <h3 class="no-anchor listing-title">
 <a href="../posts/pagerank_critique.html" class="no-external">PageRank as a Popularity Contest: Structural Vulnerabilities, Collusion Dynamics, and a Byzantine Fault-Tolerant Alternative</a>

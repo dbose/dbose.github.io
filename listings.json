@@ -15,15 +15,16 @@
   {
     "listing": "/papers/index.html",
     "items": [
-      "/papers/Aerospace-defense-industry-overview-investment-thesis.meta.html",
       "/papers/AURA-Neuro–Symbolic-Energy–Efficient-Architecture-Reusing-LLM-Infrastructure.meta.html",
       "/papers/Hydroverse - Opportunity Report.meta.html",
+      "/papers/Aerospace-defense-industry-overview-investment-thesis.meta.html",
       "/papers/Paper_A_Revised_1971_Shock.html"
     ]
   },
   {
     "listing": "/posts/index.html",
     "items": [
+      "/posts/modelith-what-i-learned.html",
       "/posts/modelith.html",
       "/posts/semantic-contract-graph.html",
       "/posts/flowproxy.html",
