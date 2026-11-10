@@ -1,0 +1,436 @@
+---
+title: "One semantic contract, all in Snowflake: governed routing across metrics, a graph, and documents without letting an agent write SQL"
+description: "The semantic-contract pattern, rebuilt Snowflake-native. A single governed vocabulary — a Snowflake Semantic View authored as a dbt materialization via the dbt_semantic_view package — becomes the thing Cortex Agents route against. Metrics compile through Cortex Analyst, graph shapes travel in the view's RELATIONSHIPS clause and a FIBO-aligned relational knowledge graph, and narrative lives in Cortex Search with Analytical Search for corpus-wide questions. The guardrails are the Verified Query Repository, custom instructions, and Snowflake RBAC on the view itself. New mermaid diagrams for the Cortex cascade, the semantic-view-as-router, and the ingestion-once projection."
+date: 2026-11-10
+categories: [Data Engineering, Semantic Layer, Snowflake, Cortex, dbt, Knowledge Graph, FIBO, Ontology, LLMs, RAG, Agents, Architecture]
+author:
+  - name: D. Bose
+    location: Sydney, NSW, Australia
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    code-fold: false
+---
+
+A little while ago I wrote about [one semantic contract across three stores](https://dbose.github.io/posts/semantic-contract-graph.html): a dbt semantic layer that routes a question to Postgres for metrics, Neo4j for graph shapes, or a knowledge base for narrative, and never lets a language model write the query. The lesson underneath it was the same stubborn one from [FlowProxy](https://dbose.github.io/posts/flowproxy.html): define the meaning once, force every consumer through that definition, and let the model choose from a menu rather than improvise against your data.
+
+That article wired the pattern together from parts — a Python compiler, three engines, a cache, a classifier — because in mid-2026 you had to. The parts existed; the contract between them did not, so I built it. This article is what happens when the warehouse grows the contract itself. Everything that was a custom compiler and three separate stores collapses into primitives that now ship inside **Snowflake**: a Semantic View you can author in dbt, Cortex Agents that route against it, Cortex Analyst for the metrics, Cortex Search for the documents, and a FIBO-aligned graph that lives in ordinary tables. Same pattern. One platform. Far less glue.
+
+I will build it for the same kind of product — call it **DealGraph**, an investment-intelligence platform — and I will keep the discipline from the original: the agent picks a named thing, a governed object compiles it, and nothing a chat interface says ever lands directly in a query.
+
+## The three questions, unchanged
+
+The reason the pattern exists has not moved. One question box, three fundamentally different retrieval shapes behind it.
+
+::: {.callout-note icon="false"}
+## "How much has Sequoia deployed in fintech this year?" — a metric
+
+A sum over a filtered set of rows. Answered by a **Snowflake Semantic View** through **Cortex Analyst**, which turns the question into governed SQL against the view's named metrics — never freehand SQL against base tables.
+:::
+
+::: {.callout-tip icon="false"}
+## "Which investors co-led Series B rounds with Sequoia?" — not a metric
+
+A walk from one investor through shared deals to other investors. Answered by the view's **`RELATIONSHIPS`** join contract plus a **FIBO-aligned knowledge graph** in Snowflake tables, traversed with recursive CTEs.
+:::
+
+::: {.callout-important icon="false"}
+## "Why did the partnership pass on that round?" — neither
+
+The answer lives in a paragraph of a memo. Answered by **Cortex Search**, Snowflake's managed hybrid-retrieval service, with **Analytical Search** when the question needs the whole corpus rather than three chunks.
+:::
+
+One product, one question box, three retrieval systems — and now all three are objects in the same account, under the same RBAC, described by the same semantic contract. The naive move is still to point one big agent at everything and let it reason per query. It still works, and it is still slow, expensive, and unsafe. The move that works is to decide up front, in a governed object, what each store may answer and how.
+
+## The Cortex cascade
+
+Here is the query-time architecture, Snowflake-native. Read it top to bottom: a question falls through layers, and the cheapest one that can answer stops the fall.
+
+```{mermaid}
+flowchart TB
+    Q["User question<br/>natural language"] --> CACHE
+
+    CACHE{"Semantic cache<br/>result-reuse, TTL by freshness"}
+    CACHE -->|"hit (~30%)"| ANS["Cached answer<br/>no model call"]
+    CACHE -->|"miss"| AGENT
+
+    subgraph orch["Cortex Agents — plan · use tools · reflect"]
+        direction TB
+        AGENT["Agent orchestrator<br/>routes against the Semantic View,<br/>follows custom instructions"]
+    end
+
+    SV[("Semantic View<br/>TABLES · RELATIONSHIPS · METRICS<br/>+ Verified Query Repository")] -.->|"is the tool catalog + routing context"| AGENT
+
+    AGENT -->|"METRIC"| ANALYST["Cortex Analyst<br/>governed text-to-SQL"]
+    AGENT -->|"RELATIONSHIP"| GRAPH["Graph traversal<br/>recursive CTE over FIBO tables"]
+    AGENT -->|"DOCUMENT"| SEARCH["Cortex Search<br/>hybrid + Analytical Search"]
+    AGENT -->|"confidence low /<br/>genuine multi-hop"| PLAN["Multi-step plan<br/>chain tools, reflect"]
+
+    ANALYST --> SF[("Snowflake tables<br/>governed SQL")]
+    GRAPH --> SF
+    SEARCH --> IDX[("Cortex Search index<br/>Arctic Embed")]
+
+    classDef q fill:#232f47,stroke:#38455f,color:#eef2f8;
+    classDef cache fill:#2a2418,stroke:#c78a2e,color:#e0a852;
+    classDef ai fill:#1d2740,stroke:#44546f,color:#eef2f8;
+    classDef sl fill:#1a2a22,stroke:#5c9d78,color:#86c79a;
+    classDef store fill:#212a3d,stroke:#38455f,color:#c8d2e2;
+    class Q,ANS q;
+    class CACHE cache;
+    class AGENT,PLAN ai;
+    class SV sl;
+    class ANALYST,GRAPH,SEARCH ai;
+    class SF,IDX store;
+```
+
+The first thing to notice is the same as before: most queries never reach the expensive machinery. A result cache sits in front, with a time-to-live tied to how fresh the underlying data needs to be. On a miss, **Cortex Agents** runs its *plan → use tools → reflect* loop, but the plan is cheap when the question is simple, because the agent is choosing a tool, not authoring a query. Only genuine multi-hop questions — chain a graph walk into a metric into a document lookup — spend real tokens on multi-step planning.
+
+The economics are the point, and they are better than the hand-built version because the orchestration, the text-to-SQL, and the search are managed services billed per token and per index rather than per custom LLM call you wrote yourself. You answer ~30% from cache at no model cost, route ~60% through one tool selection and one templated call at a fraction of a cent, and reserve the multi-step planner for the ~10% that truly need it. Same answers, roughly an order of magnitude less spend. You do not save money by making the model cheaper. You save it by not calling the model when a governed object will do.
+
+Three Snowflake dates matter for why this is now a platform feature and not a project: **Cortex Agents went GA on 2025-11-04**, **Semantic View Autopilot went GA in February 2026**, and **Analytical Search entered public preview on 2026-06-30**. As of August 2026 Snowflake's own docs recommend moving standalone Cortex Analyst usage onto Cortex Agents, precisely because the agent adds the unstructured retrieval, tool calling, and multi-step orchestration this cascade needs.
+
+## The Semantic View is the router, not a lookup table
+
+The agent's job sounds simple and is easy to get catastrophically wrong: given a question, pick which store answers it. The wrong way is to hand the LLM raw table schemas and ask it to write SQL. That is how you get hallucinated columns, freehand queries against half-remembered tables, and an injection surface with a chat box in front of it.
+
+The right way is the one the original article argued for, and Snowflake now enforces it structurally. The agent sees a **catalog of named things** — the Semantic View's metrics, dimensions, and relationships — and it picks one and fills the blanks. Everything downstream of that choice is governed, deterministic Snowflake machinery.
+
+```{mermaid}
+flowchart TB
+    Q["User question<br/>natural language"] --> AG
+
+    subgraph menu["What the agent is allowed to do: pick from a menu"]
+        direction TB
+        AG["Cortex Agent<br/>sees the Semantic View's named objects"]
+        AG -->|"selects one tool + fills slots"| PICK["Tool call: metric / relationship / search<br/>+ params + filters"]
+    end
+
+    SV[("Semantic View (dbt-materialized)<br/>METRICS · DIMENSIONS · RELATIONSHIPS<br/>AI_VERIFIED_QUERIES · custom instructions")] -.->|"generates the menu + grounds the agent"| AG
+
+    PICK --> ROUTE{"Agent orchestration<br/>governed, RBAC-scoped"}
+    ROUTE -->|"METRIC"| ANALYST["Cortex Analyst → governed SQL"]
+    ROUTE -->|"RELATIONSHIP"| CYPHERish["Recursive CTE over FIBO graph tables"]
+    ROUTE -->|"DOCUMENT"| SEARCH["Cortex Search retrieval"]
+
+    ANALYST --> SF[("Snowflake")]
+    CYPHERish --> SF
+    SEARCH --> IDX[("Search index")]
+
+    classDef q fill:#232f47,stroke:#38455f,color:#eef2f8;
+    classDef ai fill:#2a2418,stroke:#c78a2e,color:#e0a852;
+    classDef sl fill:#1d2740,stroke:#44546f,color:#eef2f8;
+    classDef comp fill:#1a2a22,stroke:#5c9d78,color:#86c79a;
+    classDef store fill:#212a3d,stroke:#38455f,color:#c8d2e2;
+    class Q q;
+    class AG,PICK ai;
+    class SV sl;
+    class ROUTE,ANALYST,CYPHERish,SEARCH comp;
+    class SF,IDX store;
+```
+
+The dashed line is the whole idea, and it is identical to the original. The Semantic View generates the menu and grounds the agent; the model may only choose from it. The model never touches the governed path that produces SQL. In Snowflake that path is not a compiler I wrote — it is **Cortex Analyst** emitting SQL that references only the view's *logical* table and column names, which is also the rule the Verified Query Repository enforces: verified SQL must use logical names from the semantic model, never raw dataset names.
+
+Critically, the agent routes **against the view, not around it**. Snowflake's guidance is to keep each Semantic View focused on one business domain, because Cortex Agents query each view independently and do not join across separate views for you. So the view *is* the routing surface — which is exactly the property the original "routing card" was hand-rolling. The catalog the agent reads is the view's own metadata, not fifty tokens of YAML I generated and prayed over.
+
+## One governed object, two paradigms: metrics and a graph
+
+Here is the part that was genuinely new in the original and is now expressible in platform DDL, so let me say it plainly.
+
+::: {.callout-important icon="false"}
+## A single Semantic View spanning tabular metrics and graph shapes
+
+A `CREATE SEMANTIC VIEW` has a `TABLES` clause, then optional `RELATIONSHIPS`, `FACTS`, `DIMENSIONS`, and `METRICS`. The metrics half is the tabular semantic layer — entities, dimensions, measures, metrics, compiled to SQL by Cortex Analyst. **The `RELATIONSHIPS` clause is where the graph contract lives.** It declares the join paths between logical tables — `deals(investor_id) REFERENCES investors` — and those same declared relationships are what a FIBO-aligned graph traversal walks. One governed vocabulary, two query paradigms, no second source of truth. The dbt project you already run, extended to answer graph questions it structurally could not answer before.
+:::
+
+The whole thing is authored in dbt, because the point is that it fits your existing project. The [Snowflake-Labs `dbt_semantic_view`](https://github.com/Snowflake-Labs/dbt_semantic_view) package adds a `semantic_view` materialization: you write the `CREATE SEMANTIC VIEW` body in a dbt model, use `{{ ref() }}` and `{{ source() }}` inside the `TABLES` clause so dbt tracks lineage, and `dbt run` manages the object. It is a deliberate passthrough to Snowflake's SQL layer, so new capabilities like `AI_VERIFIED_QUERIES` work without waiting on a package update.
+
+Here is the DealGraph view as a dbt model. The metrics half is ordinary semantic-layer work; the `RELATIONSHIPS` clause is the graph contract.
+
+```sql
+-- models/semantic/deal_graph__sv.sql
+{{ config(materialized='semantic_view') }}
+
+TABLES (
+    investors AS {{ ref('dim_investors') }}
+        PRIMARY KEY (investor_id)
+        WITH SYNONYMS ('funds', 'LPs', 'firms')
+        COMMENT = 'FIBO: fibo-be-le-lp:LegalEntity (investing party)',
+    companies AS {{ ref('dim_companies') }}
+        PRIMARY KEY (company_id)
+        COMMENT = 'FIBO: fibo-be-corp:Corporation',
+    deals     AS {{ ref('fct_deals') }}
+        PRIMARY KEY (deal_id)
+        COMMENT = 'FIBO: fibo-sec-dbt-bnd:... financing event'
+)
+
+RELATIONSHIPS (
+    -- the join contract: the same edges the graph walk traverses
+    deals_to_investor AS
+        deals (investor_id) REFERENCES investors,
+    deals_to_company  AS
+        deals (company_id)  REFERENCES companies
+)
+
+FACTS (
+    deals.amount AS amount_usd,
+    deals.round_type AS round_type
+)
+
+DIMENSIONS (
+    companies.sector    AS sector,
+    deals.deal_date     AS deal_date,
+    deals.round_type    AS round_type
+)
+
+METRICS (
+    investors.total_invested AS SUM(deals.amount_usd)
+        COMMENT = 'Total capital deployed by an investor',
+    investors.deal_count     AS COUNT(deals.deal_id),
+    investors.avg_check       AS AVG(deals.amount_usd)
+)
+
+COMMENT = 'DealGraph governed contract: metrics via Cortex Analyst,
+           relationships via FIBO graph tables, aligned on logical keys.'
+```
+
+Read what this is. Named metrics an agent may request by name and nothing else. A whitelist of dimensions it may group and filter by. And a `RELATIONSHIPS` block that declares, once, exactly which join paths exist — which are the only edges a graph walk is allowed to traverse. The analyst who authors this decides, once, which questions the object can answer and which knobs a caller may turn. Everything else is closed.
+
+## The join contract, which is still the quiet centerpiece
+
+In the original the quiet centerpiece was one line — `metricflow_entity: investor` — binding a graph node to a semantic-layer entity so results from the graph could join straight onto metrics. In Snowflake that binding is not a line I invented; it is the **primary key and the declared relationship**, both living in the same Semantic View.
+
+```sql
+-- the contract, restated: same logical key, two paradigms
+TABLES ( investors AS {{ ref('dim_investors') }} PRIMARY KEY (investor_id) )
+RELATIONSHIPS ( deals (investor_id) REFERENCES investors )
+```
+
+The `investor_id` that Cortex Analyst groups a metric by is the same `investor_id` that keys an `Investor` node in the graph tables, because both are the Semantic View's declared logical key. Which means a result that comes out of a graph traversal, carrying investor IDs, can turn around and join straight onto `total_invested` without anyone writing a join by hand — and it can do so *because the view declares the relationship*, not because an agent guessed it.
+
+This is what lets a single answer be half graph and half metric. The graph tells you who co-invested; the shared key lets you ask, for those exact investors, how much they deployed in fintech, and get the number from Cortex Analyst. Structure from the graph, quantities from the metrics, stitched on a key the Semantic View guarantees is aligned. Contracted at author time, enforced by the object, not glued together at query time by a hopeful agent.
+
+## FIBO: the graph's vocabulary is an industry ontology, not ad-hoc labels
+
+The original graph used hand-named relations — `co_invested_with`, `led_round`. That works, but in a regulated domain the node and edge types should mean something a regulator and a second firm would both recognise. In financial services that shared meaning is **FIBO**, the EDM Council's Financial Industry Business Ontology — a machine-readable OWL/RDF model of instruments, legal entities, and regulatory classifications.
+
+You do not import all of FIBO, and you do not treat it as an ETL target; it is a *semantic model*, not a data model. You align the parts of your graph that map to it and use it as a semantic anchor. In Snowflake the graph is ordinary tables — a `nodes` table and an `edges` table — and the FIBO alignment is a typed column plus the `COMMENT` annotations you saw in the view above.
+
+```{mermaid}
+flowchart LR
+    subgraph fibo["FIBO (OWL / RDF) — the shared vocabulary"]
+        direction TB
+        F1["fibo-be-le-lp:LegalEntity"]
+        F2["fibo-be-corp:Corporation"]
+        F3["fibo-fnd-rel:isParticipantIn"]
+    end
+
+    subgraph sf["Snowflake — the governed data"]
+        direction TB
+        N[("graph_nodes<br/>node_id · fibo_type · props")]
+        E[("graph_edges<br/>src · dst · fibo_predicate")]
+        SV[("Semantic View<br/>RELATIONSHIPS + PK")]
+        CS["Cortex Search<br/>over enriched node profiles"]
+    end
+
+    F1 -. "aligns" .-> N
+    F2 -. "aligns" .-> N
+    F3 -. "aligns" .-> E
+    SV -->|"declares the join paths the walk may use"| E
+    N --> CS
+
+    classDef ont fill:#2a2418,stroke:#c78a2e,color:#e0a852;
+    classDef store fill:#212a3d,stroke:#38455f,color:#c8d2e2;
+    classDef sl fill:#1a2a22,stroke:#5c9d78,color:#86c79a;
+    class F1,F2,F3 ont;
+    class N,E,CS store;
+    class SV sl;
+```
+
+The traversal itself is a recursive CTE over `graph_edges`, scoped to the predicates FIBO and the Semantic View both bless. This is exactly the pattern Snowflake describes in its ontology-grounded Cortex Agents work: store the ontology in relational tables, traverse with recursive CTEs, and index enriched node profiles in Cortex Search so the agent can retrieve context about an entity as well as walk to it. The payoff Snowflake reports for grounding an agent this way rather than pointing it at a bare semantic view is large — on their biomedical benchmark, accuracy roughly rose from ~50% to ~78% once a knowledge graph, graph-RAG, and curated term mappings were added. FIBO is the financial-services version of those curated mappings.
+
+A co-investment walk, scoped to declared edges and FIBO predicates:
+
+```sql
+-- "Which investors co-led Series B rounds with Sequoia?"
+-- graph walk over edges the Semantic View's RELATIONSHIPS bless
+WITH anchor AS (
+    SELECT node_id FROM graph_nodes
+    WHERE fibo_type = 'fibo-be-le-lp:LegalEntity'
+      AND props:name = 'Sequoia Capital'
+),
+co_invest AS (
+    SELECT e2.dst AS co_investor_id, COUNT(*) AS shared_deals
+    FROM graph_edges e1                         -- Sequoia -> deal
+    JOIN graph_edges e2                          -- deal   -> other investor
+      ON e1.dst = e2.dst_deal
+    JOIN anchor a ON e1.src = a.node_id
+    WHERE e1.fibo_predicate = 'fibo-fnd-rel:isParticipantIn'
+      AND e2.src <> a.node_id
+    GROUP BY e2.dst
+)
+SELECT co_investor_id, shared_deals FROM co_invest
+ORDER BY shared_deals DESC;
+```
+
+The agent never writes this. It selects the `co_invested_with` relationship from the Semantic View's menu; the traversal is a governed template parameterised on `anchor` and the FIBO predicate, exactly as the original compiler parameterised Cypher. The `co_investor_id` values it returns are the view's logical investor key, so they join straight back onto `total_invested`.
+
+## The guardrails: Verified Queries, custom instructions, and RBAC
+
+In the original, three guarantees lived in a compiler I wrote: entity alignment, filter whitelisting, parameterisation. In Snowflake those same three guarantees are **platform features of the Semantic View**, which is the whole reason to rebuild the pattern here.
+
+::: {.callout-note icon="false"}
+## Where each guarantee now lives
+
+- **Entity alignment** → the view's `PRIMARY KEY` and `RELATIONSHIPS` declarations. A graph result and a metric join on a key the object guarantees is the same. Checkable in `dbt build`, because the model fails if a `ref()` or relationship key is wrong.
+- **Filter / query whitelisting** → the **Verified Query Repository** (`AI_VERIFIED_QUERIES`) plus **custom instructions** (`AI_SQL_GENERATION`). The agent is steered toward verified SQL that references only logical names, and ambiguous or out-of-scope questions are categorised and refused rather than guessed.
+- **Parameterisation / no injection surface** → Cortex Analyst emits governed SQL; the agent never concatenates user text into a query. The injection surface of "the model wrote the WHERE clause" does not exist, because the model chose a named metric.
+- **Access control** → a Semantic View is a first-class Snowflake object. The agent is scoped to *certified* views, and RBAC on the view enforces access the same way it does on any table. Row-access and masking policies on the base tables still apply.
+:::
+
+The classifier's last rule in the original was the one that mattered most: *if confidence < 0.7, escalate; never invent a name not in the catalog.* The Snowflake equivalent is a custom instruction on the view, written in plain language, that the Cortex Agent follows directly — categorise vague questions, prefer a verified query, and when nothing fits, say so. The structural half is stronger than advice: the agent's tools *are* the view's named objects, so there is nothing else to name.
+
+```sql
+-- custom instruction attached to the Semantic View (abbrev.)
+AI_SQL_GENERATION = $$
+  Only answer using the metrics and dimensions defined in this view.
+  For relationship questions, use the declared RELATIONSHIPS only.
+  If the question needs a filter or field not defined here, do not
+  improvise SQL — categorise it as out-of-scope and defer to the agent's
+  document-retrieval tool or ask for clarification.
+$$
+```
+
+An undeclared filter is not sanitised. It is out of scope. There is no governed path that renders a user value into SQL as text, because Cortex Analyst builds the query from the view's logical model — so there is no path to exploit.
+
+## Watching one question go all the way through
+
+The demo traces the question that needs everything: *"Which of Sequoia's co-investors led fintech Series B rounds?"* A graph walk, then a filter, then a join back to metrics. Here is the agent's plan — not freehand SQL, a sequence of governed tool calls.
+
+```{mermaid}
+sequenceDiagram
+    participant U as User
+    participant A as Cortex Agent
+    participant SV as Semantic View
+    participant G as Graph tables (FIBO)
+    participant CA as Cortex Analyst
+    participant CS as Cortex Search
+
+    U->>A: "Sequoia's co-investors who led fintech Series B?"
+    A->>SV: read menu (metrics, relationships, verified queries)
+    Note over A,SV: plan: RELATIONSHIP → METRIC (confidence 0.93)
+    A->>G: walk co_invested_with(anchor='Sequoia Capital')
+    G-->>A: [investor_id...] (view's logical key)
+    A->>CA: total_invested GROUP BY investor_id<br/>FILTER sector='fintech', round='Series B'
+    Note over A,CA: join on investor_id — guaranteed aligned by the view
+    CA-->>A: amounts per investor (governed SQL)
+    A->>CS: (optional) retrieve rationale from memos
+    CS-->>A: grounding chunks
+    A-->>U: co-investors + amounts + cited rationale
+```
+
+The agent reads the view's menu and plans *relationship → metric* at high confidence. It walks the graph for co-investors, gets back the view's logical `investor_id`, and hands those exact IDs to Cortex Analyst for `total_invested` filtered to fintech Series B. Because the Semantic View declares the relationship and the primary key, the join is guaranteed aligned — the `inv_0042` out of the graph lands cleanly on the metric. The final answer is graph structure plus governed SQL, stitched on one contracted key, with optional narrative grounding from Cortex Search.
+
+And when a caller tries to sneak in a filter the view never declared — say, `valuation > 1B` — there is no verified query and no dimension for it, so the custom instruction categorises it out of scope rather than letting Analyst invent a column. The guardrail is not advice. It is the object.
+
+## Extract once, project into each store
+
+The second pattern from the original runs along the bottom of the architecture, and it is what makes the metrics and the graph exist at all. Documents arrive unstructured. A one-time extraction pass — now a **Cortex `AI_COMPLETE` / `AI_EXTRACT`** call at ingestion rather than a Bedrock batch job — reads each memo and pulls out typed facts with provenance: this investor led this round for this amount on this date, page cited. Those facts become graph edges and metric rows. The narrative residue — the tone, the rationale that does not reduce to a fact — stays in Cortex Search for retrieval.
+
+```{mermaid}
+flowchart LR
+    DOC["Deal memos,<br/>board packs (unstructured)"] --> EX
+
+    subgraph ingest["Ingestion — pay the model cost once"]
+        direction TB
+        EX["Cortex AI_EXTRACT<br/>typed facts + provenance"]
+    end
+
+    EX --> SILVER[("Silver: canonical,<br/>entity-resolved facts<br/>(Dynamic Table)")]
+
+    SILVER -->|"project"| MET[("Metric tables<br/>→ Semantic View")]
+    SILVER -->|"project"| GRAPH[("graph_nodes / edges<br/>FIBO-typed")]
+    DOC     -->|"chunk + embed"| SRCH[("Cortex Search index<br/>Arctic Embed")]
+
+    MET --> ANALYST["Cortex Analyst"]
+    GRAPH --> WALK["Recursive CTE walk"]
+    SRCH --> RAG["Hybrid + Analytical Search"]
+
+    classDef src fill:#232f47,stroke:#38455f,color:#eef2f8;
+    classDef ai fill:#2a2418,stroke:#c78a2e,color:#e0a852;
+    classDef store fill:#212a3d,stroke:#38455f,color:#c8d2e2;
+    classDef comp fill:#1a2a22,stroke:#5c9d78,color:#86c79a;
+    class DOC src;
+    class EX ai;
+    class SILVER,MET,GRAPH,SRCH store;
+    class ANALYST,WALK,RAG comp;
+```
+
+The token spend happens once, at ingestion, not on every query. You pay to read a memo the day it lands, then query the facts it contained for free, forever, in whichever shape the question wants. And it is not duplication: there is one canonical, entity-resolved truth in a Silver **Dynamic Table**, and the metric tables and graph tables are read models projected from it, rebuildable at any time. Same facts, two shapes, one source. It is CQRS, not copy-paste — and in Snowflake the projections are incremental Dynamic Tables rather than a Delta job you schedule.
+
+The retrieval half is worth one note, because it changed between the two articles. A plain RAG system retrieves a handful of chunks, which is fine for *"why did they pass"* but useless for *"what themes recur across every memo this quarter."* **Analytical Search** — public preview since June 2026 — is Snowflake's answer: the Cortex Agent classifies query intent at runtime, keeps single-passage questions on the standard RAG path, and triggers a corpus-wide analytical loop for questions that need to count or aggregate across the whole document set. The original article had no equivalent; it would have fallen back to the expensive planner for exactly those questions.
+
+## Why this beats pointing an agent at the problem
+
+The honest alternative is still a capable agent with tool access, pointed at the warehouse and the documents, left to reason per query. It works, and for a genuinely novel multi-hop question it is exactly what the agent's multi-step plan falls back to. The problem is using it for everything: slow, because every question becomes a reasoning loop; expensive, because every step is a model call; and unsafe, because an agent writing its own SQL will, on some query you did not test, name a column that does not exist and do it with total confidence.
+
+The Semantic View removes that failure class, and the difference from the original is *who maintains the removal*. In 2026 I maintained it — a Rust compiler, golden tests, a CI gate. Here the platform maintains it: the view is a governed object, Cortex Analyst emits SQL against its logical model, the Verified Query Repository pins the hard cases, and RBAC scopes the whole thing. The model is equally capable in both worlds. The only thing that changed is whether its output is a query or a choice.
+
+```{mermaid}
+flowchart LR
+    subgraph free["Freehand: the agent writes the query"]
+        direction TB
+        FQ["Question"] --> FLLM["Agent sees raw schemas"]
+        FLLM -->|"emits SQL text"| FEXEC[["Executed as sent"]]
+        FEXEC --> FRISK["Hallucinated columns<br/>injection surface<br/>silent wrong answers"]
+    end
+
+    subgraph gov["Governed: the agent picks a named object"]
+        direction TB
+        GQ["Question"] --> GLLM["Agent sees the Semantic View"]
+        GLLM -->|"selects a metric / relationship"| GCOMP{"Cortex Analyst + VQR + RBAC"}
+        GCOMP --> GSAFE["Logical-name SQL only<br/>no injection surface<br/>out-of-scope question refused"]
+    end
+
+    classDef bad fill:#2a1a1a,stroke:#b45454,color:#e8b0b0;
+    classDef good fill:#1a2a22,stroke:#5c9d78,color:#86c79a;
+    classDef n fill:#232f47,stroke:#38455f,color:#eef2f8;
+    class FQ,GQ n;
+    class FLLM,FEXEC,FRISK bad;
+    class GLLM,GCOMP,GSAFE good;
+```
+
+A wrong choice is a bad row you can log and cap; a wrong query is an incident. It is the same trade [FlowProxy](https://dbose.github.io/posts/flowproxy.html) makes for a BI tool and the same one the [three-store article](https://dbose.github.io/posts/semantic-contract-graph.html) makes across Postgres, Neo4j, and a knowledge base — now made once, inside the warehouse, against objects the warehouse governs.
+
+## What's different, and why rebuild it at all
+
+If the pattern is the same, why write it again? Because where the guardrails live decides who can be trusted to run it.
+
+| Concern | Three-store build (2026) | Snowflake-native (this article) |
+|---|---|---|
+| Routing | Hand-rolled classifier + routing card | Cortex Agents routing against the Semantic View |
+| Metrics | dbt MetricFlow → SQL | Semantic View `METRICS` → Cortex Analyst |
+| Graph | GraphFlow compiler → Cypher → Neo4j | View `RELATIONSHIPS` + FIBO tables → recursive CTE |
+| Documents | Bedrock KB + OpenSearch | Cortex Search + Analytical Search |
+| Join contract | `metricflow_entity:` in YAML, CI-checked | `PRIMARY KEY` + `RELATIONSHIPS` in the view |
+| Guardrails | Custom compiler (whitelist, params) | Verified Query Repository + custom instructions + RBAC |
+| Authoring | Two YAML files + a Rust crate | One dbt model via `dbt_semantic_view` |
+| Ops surface | Four systems to run | One account, one RBAC model |
+
+The three-store version is more portable — it binds to MetricFlow *or* an Open Semantic Interchange model, and runs anywhere those do. The Snowflake version trades that portability for something a regulated data team values more: every guardrail is a platform object under one access model, authored in the dbt project they already maintain, with no compiler of mine between the agent and the data. The semantic contract did not change. It moved into the warehouse, and the warehouse grew the primitives to hold it.
+
+That is the pattern, Snowflake-native. One Semantic View stretched over two paradigms, tabular and graph, with documents on the side; three retrieval tools under a single governed object; Cortex Agents spending tokens where they earn their keep; a FIBO vocabulary so the graph means what a regulator thinks it means; and an extraction step that pays the model cost once. The metrics half is the dbt you already run. The graph half is a `RELATIONSHIPS` clause and two tables. The rest is refusing, everywhere, to let an agent improvise against your data — and letting the platform, not a compiler you maintain, be the thing that refuses.
+
+::: {.callout-note icon="false"}
+## The primitives
+
+- **Semantic Views** — `CREATE SEMANTIC VIEW` (`TABLES`, `RELATIONSHIPS`, `FACTS`, `DIMENSIONS`, `METRICS`); [Snowflake docs](https://docs.snowflake.com/en/sql-reference/sql/create-semantic-view).
+- **dbt materialization** — [Snowflake-Labs/dbt_semantic_view](https://github.com/Snowflake-Labs/dbt_semantic_view), a `semantic_view` materialization with `ref()`/`source()` lineage.
+- **Cortex Agents** (GA 2025-11-04) — *plan · use tools · reflect*, routing across Cortex Analyst and Cortex Search.
+- **Cortex Analyst** — governed text-to-SQL over the Semantic View; Verified Query Repository via `AI_VERIFIED_QUERIES`.
+- **Cortex Search** — managed hybrid retrieval (Arctic Embed); **Analytical Search** (public preview 2026-06-30) for corpus-wide questions.
+- **FIBO** — the [EDM Council Financial Industry Business Ontology](https://edmcouncil.org/frameworks/industry-models/fibo/), aligned as a semantic anchor, not an ETL target.
+
+The two siblings this article builds on: [GraphFlow](https://github.com/dbose/graphflow) (the three-store compiler) and [FlowProxy](https://github.com/dbose/flowproxy) (the tabular original).
+:::
